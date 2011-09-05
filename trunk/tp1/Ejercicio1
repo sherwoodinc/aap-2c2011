@@ -5,8 +5,8 @@ QUERY FORALL (x, y, z: INT): x <= y AND y <= z => x <= z ;
 
 % b
 
-QUERY FORALL (a, b: INT): a < b OR a = b OR a > b ;
+QUERY FORALL (a, b: INT): a < b XOR a = b XOR a > b ;
 
 % c
 
-QUERY FORALL (a, b: INT): a <= b AND b <= a+1 => b = a OR b = a + 1 ;
+QUERY FORALL (a, b: INT): a <= b AND b <= a+1 => b = a XOR b = a + 1 ;
