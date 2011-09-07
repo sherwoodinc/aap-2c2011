@@ -10,7 +10,6 @@ import budapest.pest.parser.ParseException;
 import budapest.pest.parser.PestParser;
 import budapest.pest.predtocvc3.PredToCVC3Translator;
 import budapest.pest.vcgenerator.PestVCGenerator;
-import budapest.pest.vcgenerator.PredFreshVarGetter;
 
 public class Main {
 
@@ -44,22 +43,17 @@ public class Main {
 			return;
 		}
 				
-		/*try
+		try
 		{
 			Pred verificationCondition = new PestVCGenerator().execute(p);
 			String cvc3string = verificationCondition.accept(new PredToCVC3Translator(), null);
-			System.out.println(cvc3string);			
+			System.out.println("QUERY " + cvc3string + ";");
 		}
 		catch (Exception e)
 		{
 			e.printStackTrace();
 			return;
-		}*/
-		
-		Pred pre = p.getMain().pre;
-		PredFreshVarGetter getter = new PredFreshVarGetter();
-		String fresh = getter.execute(pre);
-		System.out.println(fresh);
+		}
 		
 	}
 

@@ -57,7 +57,7 @@ public final class PestVCGenerator extends PestVisitor<Pred, Pred> {
 		return new QuantifiedPred(p.line,
 				p.column,
 				QuantifiedPred.Type.EXISTS,
-				freshVar,
+				var + "," + freshVar,
 				null,
 				null,
 				and);
