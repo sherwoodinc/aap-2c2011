@@ -11,6 +11,6 @@ public class VarReplacement {
 	}
 	
 	public String execute(String var){
-		return var == oldVar ? newVar : var;
+		return var.equals(oldVar) ? newVar : var;
 	}
 }
