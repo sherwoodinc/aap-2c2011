@@ -19,7 +19,7 @@ public class Main {
 		Program p;
 		try 
 		{
-			fis = new FileInputStream("test1.pest");
+			fis = new FileInputStream("tests/testSeqAssign.pest");
 			PestParser parser = new PestParser(fis);
 			try 
 			{
