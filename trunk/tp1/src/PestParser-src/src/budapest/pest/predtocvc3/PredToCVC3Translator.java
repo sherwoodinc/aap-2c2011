@@ -17,7 +17,7 @@ public class PredToCVC3Translator extends PredPrinter {
 		String result = super.visit(n, arg);
 		result = result.replace("&&", "AND");
 		result = result.replace("||", "OR");
-		return result;
+		return "( "+result+" )";
 	}
 
 	public String visit(BooleanLiteralPred n, Void arg) {
@@ -43,16 +43,17 @@ public class PredToCVC3Translator extends PredPrinter {
 		String ret = "";
 		switch(n.type) {
 		case EXISTS:
-			ret = "EXISTS";
+			ret = "( EXISTS";
 			break;
 		case FORALL:
-			ret = "FORALL";
+			ret = "( FORALL";
 			break;
 		}
 		ret += " (";
 		ret += n.var.toLowerCase();
 		ret += ":INT): ";
 		ret += Brackets.bracketsIfNeeded(n, n.subPred, this, arg);
+		ret += " )"; 
 		return ret;
 	}
 }
