@@ -31,8 +31,8 @@ public class PredVarReplacer extends PredVisitor<Pred, VarReplacement> {
 				n.column,
 				n.type,
 				arg.execute(n.var),
-				n.lowerBound.accept(new TrmVarReplacer(), arg),
-				n.upperBound.accept(new TrmVarReplacer(), arg),
+				n.lowerBound != null ?  n.lowerBound.accept(new TrmVarReplacer(), arg) : null,
+			    n.upperBound != null ?  n.upperBound.accept(new TrmVarReplacer(), arg) : null,
 				n.subPred.accept(this, arg));
 	}
 	
