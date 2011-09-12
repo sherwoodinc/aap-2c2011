@@ -97,10 +97,13 @@ public class PredPrinter extends PredVisitor<String, Void> {
 		}
 		ret += " ";
 		ret += n.var;
-		ret += " from ";
-		ret += n.lowerBound.accept(new TrmPrinter(), arg);
-		ret += " to ";
-		ret += n.upperBound.accept(new TrmPrinter(), arg);
+		if (n.lowerBound != null && n.upperBound != null)
+		{
+			ret += " from ";
+			ret += n.lowerBound.accept(new TrmPrinter(), arg);
+			ret += " to ";
+			ret += n.upperBound.accept(new TrmPrinter(), arg);
+		}
 		ret += " : " + Brackets.bracketsIfNeeded(n, n.subPred, this, arg);
 		return ret;
 	}

@@ -1,11 +1,11 @@
 package budapest.pest.vcgenerator;
 
+import budapest.pest.ast.pred.trm.Trm;
 import budapest.pest.ast.pred.BinaryPred;
 import budapest.pest.ast.pred.NotPred;
 import budapest.pest.ast.pred.Pred;
 import budapest.pest.ast.pred.QuantifiedPred;
 import budapest.pest.ast.pred.RelationPred;
-import budapest.pest.ast.pred.trm.Trm;
 import budapest.pest.ast.pred.trm.VarTrm;
 import budapest.pest.ast.proc.Procedure;
 import budapest.pest.ast.proc.Program;

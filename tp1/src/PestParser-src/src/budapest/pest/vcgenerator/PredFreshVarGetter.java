@@ -87,8 +87,10 @@ public class PredFreshVarGetter extends PredVisitor<List<String>, Void> {
 		List<String> result = new ArrayList<String>();
 		result.add(n.var);
 		result.addAll(n.subPred.accept(this, arg));
-		result.addAll(n.lowerBound.accept(new TrmFreshVarGetter(), arg));
-		result.addAll(n.upperBound.accept(new TrmFreshVarGetter(), arg));
+		if (n.lowerBound != null)
+			result.addAll(n.lowerBound.accept(new TrmFreshVarGetter(), arg));
+		if (n.upperBound != null)
+			result.addAll(n.upperBound.accept(new TrmFreshVarGetter(), arg));
 		return result;
 	}
 	
