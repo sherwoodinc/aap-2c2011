@@ -11,7 +11,7 @@ import budapest.pest.ast.pred.trm.NegTrm;
 import budapest.pest.ast.pred.trm.VarTrm;
 import budapest.pest.ast.visitor.TrmVisitor;
 
-public class TrmFreshVarGetter extends TrmVisitor<List<String>, Void> {
+public class TrmVarManager extends TrmVisitor<List<String>, Void> {
 	
 	public List<String> visit(BinaryTrm n, Void arg) {
 		List<String> results = new ArrayList<String>();

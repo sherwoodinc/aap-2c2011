@@ -12,9 +12,9 @@ import budapest.pest.ast.pred.QuantifiedPred;
 import budapest.pest.ast.pred.RelationPred;
 import budapest.pest.ast.visitor.PredVisitor;
 
-public class PredFreshVarGetter extends PredVisitor<List<String>, Void> {
+public class PredVarManager extends PredVisitor<List<String>, Void> {
 	
-	public String execute(Pred p) {
+	public String getFreshVar(Pred p) {
 		String allVars = "abcdefghijklmnopqrstuvwxyz"; 
 		
 		List<String> allUsedVars = getUsedVars(p);
@@ -63,7 +63,13 @@ public class PredFreshVarGetter extends PredVisitor<List<String>, Void> {
 	}
 	
 	public List<String> getUsedVars(Pred p) {
-		return p.accept(this, null);
+		List<String> resultVars = new ArrayList<String>();
+		List<String> vars = p.accept(this, null);
+		for(String var : vars){
+			if(!resultVars.contains(var))
+				resultVars.add(var);
+		}
+		return resultVars;
 	}
 	
 	public List<String> visit(BinaryPred n, Void arg) {
@@ -88,16 +94,16 @@ public class PredFreshVarGetter extends PredVisitor<List<String>, Void> {
 		result.add(n.var);
 		result.addAll(n.subPred.accept(this, arg));
 		if (n.lowerBound != null)
-			result.addAll(n.lowerBound.accept(new TrmFreshVarGetter(), arg));
+			result.addAll(n.lowerBound.accept(new TrmVarManager(), arg));
 		if (n.upperBound != null)
-			result.addAll(n.upperBound.accept(new TrmFreshVarGetter(), arg));
+			result.addAll(n.upperBound.accept(new TrmVarManager(), arg));
 		return result;
 	}
 	
 	public List<String> visit(RelationPred n, Void arg) {
 		List<String> result = new ArrayList<String>();
-		result.addAll(n.left.accept(new TrmFreshVarGetter(), arg));
-		result.addAll(n.right.accept(new TrmFreshVarGetter(), arg));
+		result.addAll(n.left.accept(new TrmVarManager(), arg));
+		result.addAll(n.right.accept(new TrmVarManager(), arg));
 		return result;
 	}
 }

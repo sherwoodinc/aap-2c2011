@@ -19,7 +19,7 @@ public class Main {
 		Program p;
 		try 
 		{
-			fis = new FileInputStream("tests/testSeqAssign.pest");
+			fis = new FileInputStream("tests/test1.pest");
 			PestParser parser = new PestParser(fis);
 			try 
 			{
@@ -45,9 +45,9 @@ public class Main {
 				
 		try
 		{
-			Pred verificationCondition = new PestVCGenerator().execute(p);
-			String cvc3string = verificationCondition.accept(new PredToCVC3Translator(), null);
-			System.out.println("QUERY " + cvc3string + ";");
+			Pred vc = new PestVCGenerator().execute(p);
+			String cvc3string = new PredToCVC3Translator().execute(vc);
+			System.out.println(cvc3string);
 		}
 		catch (Exception e)
 		{
