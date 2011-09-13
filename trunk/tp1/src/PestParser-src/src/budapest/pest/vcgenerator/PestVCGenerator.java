@@ -4,7 +4,6 @@ import budapest.pest.ast.pred.trm.Trm;
 import budapest.pest.ast.pred.BinaryPred;
 import budapest.pest.ast.pred.NotPred;
 import budapest.pest.ast.pred.Pred;
-import budapest.pest.ast.pred.QuantifiedPred;
 import budapest.pest.ast.pred.RelationPred;
 import budapest.pest.ast.pred.trm.VarTrm;
 import budapest.pest.ast.proc.Procedure;
@@ -39,7 +38,7 @@ public final class PestVCGenerator extends PestVisitor<Pred, Pred> {
 
 	public Pred visit(AssignStmt n, Pred p) {
 		String var = n.left.name;
-		String freshVar = new PredFreshVarGetter().execute(p);
+		String freshVar = new PredVarManager().getFreshVar(p);
 
 		Trm rightAsTrm = n.right.accept(new ExpToTrmTranslator(), null);
 
@@ -57,28 +56,11 @@ public final class PestVCGenerator extends PestVisitor<Pred, Pred> {
 				replacedTrm);
 
 		//A[x->x'] && x==[E->x']
-		Pred and = new BinaryPred(p.line,
+		return new BinaryPred(p.line,
 				p.column,
 				left,
 				BinaryPred.Operator.AND,
 				right);
-
-		//EXISTS x'|A[x->x'] && x==E[x->x']
-		Pred exists = new QuantifiedPred(p.line,
-				p.column,
-				QuantifiedPred.Type.EXISTS,
-				var,
-				null,
-				null,
-				and);
-
-		return new QuantifiedPred(p.line,
-				p.column,
-				QuantifiedPred.Type.EXISTS,
-				freshVar,
-				null,
-				null,
-				exists);
 	}
 
 	public Pred visit(SeqStmt n, Pred p) {
@@ -91,7 +73,7 @@ public final class PestVCGenerator extends PestVisitor<Pred, Pred> {
 	}
 
 	public Pred visit(IfStmt n, Pred p) {
-		//(Cond AND POS(IF)) OR (!COND AND POS(ELSE))
+		//(COND AND POST(IF)) OR (!COND AND POST(ELSE))
 		Pred conditionPred = n.condition.accept(new ExpToPredTranslator(), null);
 
 		Pred andLeft = new BinaryPred(p.line,
