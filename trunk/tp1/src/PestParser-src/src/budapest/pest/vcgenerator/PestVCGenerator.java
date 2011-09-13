@@ -55,7 +55,7 @@ public final class PestVCGenerator extends PestVisitor<Pred, Pred> {
 				RelationPred.Operator.EQ,
 				replacedTrm);
 
-		//A[x->x'] && x==[E->x']
+		//A[x->x'] && x==E[x->x']
 		return new BinaryPred(p.line,
 				p.column,
 				left,
@@ -73,26 +73,34 @@ public final class PestVCGenerator extends PestVisitor<Pred, Pred> {
 	}
 
 	public Pred visit(IfStmt n, Pred p) {
-		//(COND AND POST(IF)) OR (!COND AND POST(ELSE))
+		
+		//Condition as Pred...
 		Pred conditionPred = n.condition.accept(new ExpToPredTranslator(), null);
 
+		//Condition && Post(ThenS)
 		Pred andLeft = new BinaryPred(p.line,
 				p.column,
 				conditionPred,
 				BinaryPred.Operator.AND,
 				n.thenS.accept(this, p));
 
+		//!Condition && Post(ElseS)
 		Pred andRight = new BinaryPred(p.line,
 				p.column,
 				new NotPred(p.line, p.column, conditionPred),
 				BinaryPred.Operator.AND,
 				n.elseS.accept(this, p));
 
+		//(Condition && Post(ThenS)) OR (!Condition && Post(ElseS))
 		return new BinaryPred(p.line,
 				p.column,
 				andLeft,
 				BinaryPred.Operator.OR,
 				andRight);
+	}
+	
+	public Pred visit(BlockStmt n, Pred p){
+		return n.stmt.accept(this, p);
 	}
 
 	public Pred visit(LoopStmt n, Pred d){
@@ -106,11 +114,6 @@ public final class PestVCGenerator extends PestVisitor<Pred, Pred> {
 	}
 	
 	public Pred visit(AssumeStmt n, Pred d){
-		//TODO
-		return d;
-	}
-	
-	public Pred visit(BlockStmt n, Pred d){
 		//TODO
 		return d;
 	}
