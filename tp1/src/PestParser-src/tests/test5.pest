@@ -1,0 +1,16 @@
+test5(a, b)
+:? a != 0
+:! b > 10
+:* b
+{
+	b <- 0
+	if a != 0 then {
+		if b > 0 then {
+			b <- b - 10
+		} else if a != 0 then {
+			b <- b + 5
+		}
+		b <- b + 5
+	} 
+	b <- b + 1
+}
