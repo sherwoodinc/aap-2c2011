@@ -84,19 +84,33 @@ public final class PestVCGenerator extends PestVisitor<Pred, Pred> {
 				BinaryPred.Operator.AND,
 				n.thenS.accept(this, p));
 
-		//!Condition && Post(ElseS)
-		Pred andRight = new BinaryPred(p.line,
-				p.column,
-				new NotPred(p.line, p.column, conditionPred),
-				BinaryPred.Operator.AND,
-				n.elseS.accept(this, p));
-
+		Pred ret, andRight;
+		
+		if( n.elseS instanceof SkipStmt ){
+			//If without Else
+			andRight = new BinaryPred(p.line,
+					p.column,
+					new NotPred(p.line, p.column, conditionPred),
+					BinaryPred.Operator.AND,
+					p);
+		}else{
+		
+			//!Condition && Post(ElseS)
+			andRight = new BinaryPred(p.line,
+					p.column,
+					new NotPred(p.line, p.column, conditionPred),
+					BinaryPred.Operator.AND,
+					n.elseS.accept(this, p));
+		}	
+	
 		//(Condition && Post(ThenS)) OR (!Condition && Post(ElseS))
-		return new BinaryPred(p.line,
-				p.column,
-				andLeft,
-				BinaryPred.Operator.OR,
-				andRight);
+		ret = new BinaryPred(p.line,
+					p.column,
+					andLeft,
+					BinaryPred.Operator.OR,
+					andRight);
+		
+		return ret;
 	}
 	
 	public Pred visit(BlockStmt n, Pred p){
