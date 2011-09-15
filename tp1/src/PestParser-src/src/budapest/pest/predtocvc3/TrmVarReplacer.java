@@ -1,4 +1,4 @@
-package budapest.pest.pesttocvc3;
+package budapest.pest.predtocvc3;
 
 import budapest.pest.ast.pred.trm.ArrayAccessTrm;
 import budapest.pest.ast.pred.trm.ArraySizeTrm;
@@ -8,6 +8,7 @@ import budapest.pest.ast.pred.trm.NegTrm;
 import budapest.pest.ast.pred.trm.Trm;
 import budapest.pest.ast.pred.trm.VarTrm;
 import budapest.pest.ast.visitor.TrmVisitor;
+import budapest.pest.pesttocvc3.VarReplacement;
 
 public class TrmVarReplacer extends TrmVisitor<Trm, VarReplacement> {
 

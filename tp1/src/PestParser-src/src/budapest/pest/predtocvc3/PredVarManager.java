@@ -1,4 +1,4 @@
-package budapest.pest.pesttocvc3;
+package budapest.pest.predtocvc3;
 
 import java.util.ArrayList;
 import java.util.Collections;
