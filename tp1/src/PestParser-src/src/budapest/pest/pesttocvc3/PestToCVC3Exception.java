@@ -1,4 +1,4 @@
-package budapest.main;
+package budapest.pest.pesttocvc3;
 
 public class PestToCVC3Exception extends Exception {
 	

@@ -1,4 +1,4 @@
-package budapest.pest.vcgenerator;
+package budapest.pest.pesttocvc3;
 
 import budapest.pest.ast.pred.trm.Trm;
 import budapest.pest.ast.pred.BinaryPred;
@@ -20,7 +20,7 @@ import budapest.pest.ast.stmt.SeqStmt;
 import budapest.pest.ast.stmt.SkipStmt;
 import budapest.pest.ast.visitor.PestVisitor;
 
-public final class PestVCGenerator extends PestVisitor<Pred, Pred> {
+public final class PestToCVC3Translator extends PestVisitor<Pred, Pred> {
 
 	public Pred execute(Program n) {
 		Procedure main = n.getMain();

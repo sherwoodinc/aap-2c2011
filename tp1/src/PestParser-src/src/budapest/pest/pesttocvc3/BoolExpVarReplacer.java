@@ -1,4 +1,4 @@
-package budapest.pest.vcgenerator;
+package budapest.pest.pesttocvc3;
 
 import budapest.pest.ast.exp.BinBoolExp;
 import budapest.pest.ast.exp.BoolExp;

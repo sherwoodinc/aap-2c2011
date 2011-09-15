@@ -10,12 +10,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 
-import budapest.pest.ast.pred.Pred;
 import budapest.pest.ast.proc.Program;
 import budapest.pest.parser.ParseException;
 import budapest.pest.parser.PestParser;
-import budapest.pest.predtocvc3.PredToCVC3Translator;
-import budapest.pest.vcgenerator.PestVCGenerator;
+import budapest.pest.pesttocvc3.PestToCVC3Exception;
 
 public class Main {
 
@@ -25,7 +23,7 @@ public class Main {
 	private static Boolean isDebugging = true;
 	private static Boolean executeCVC3 = true;
 	private static OutputType outputType = OutputType.FILE;
-	private static String inputFile = "tests/test4.pest";
+	private static String inputFile = "tests/test5.pest";
 			
 	public static void main(String[] args) {
 				
@@ -121,8 +119,9 @@ public class Main {
 	private static String GetCVC3StringFromProgram(Program p) throws PestToCVC3Exception {
 		try
 		{
-			Pred vc = new PestVCGenerator().execute(p);
-			return new PredToCVC3Translator().execute(vc);			
+			/*Pred vc = new PestVCGenerator().execute(p);
+			return new PredToCVC3Translator().execute(vc);*/
+			return "CVC";
 		}
 		catch(Exception e)
 		{
