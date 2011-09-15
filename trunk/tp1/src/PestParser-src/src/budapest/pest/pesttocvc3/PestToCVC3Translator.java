@@ -19,6 +19,9 @@ import budapest.pest.ast.stmt.LoopStmt;
 import budapest.pest.ast.stmt.SeqStmt;
 import budapest.pest.ast.stmt.SkipStmt;
 import budapest.pest.ast.visitor.PestVisitor;
+import budapest.pest.predtocvc3.PredVarManager;
+import budapest.pest.predtocvc3.PredVarReplacer;
+import budapest.pest.predtocvc3.TrmVarReplacer;
 
 public final class PestToCVC3Translator extends PestVisitor<Pred, Pred> {
 

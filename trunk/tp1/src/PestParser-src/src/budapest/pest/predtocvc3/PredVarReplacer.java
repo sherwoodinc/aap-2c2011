@@ -1,4 +1,4 @@
-package budapest.pest.pesttocvc3;
+package budapest.pest.predtocvc3;
 
 import budapest.pest.ast.pred.BinaryPred;
 import budapest.pest.ast.pred.BooleanLiteralPred;
@@ -7,6 +7,7 @@ import budapest.pest.ast.pred.Pred;
 import budapest.pest.ast.pred.QuantifiedPred;
 import budapest.pest.ast.pred.RelationPred;
 import budapest.pest.ast.visitor.PredVisitor;
+import budapest.pest.pesttocvc3.VarReplacement;
 
 public class PredVarReplacer extends PredVisitor<Pred, VarReplacement> {
 	
