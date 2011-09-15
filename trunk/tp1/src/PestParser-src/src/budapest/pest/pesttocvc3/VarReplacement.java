@@ -1,4 +1,4 @@
-package budapest.pest.vcgenerator;
+package budapest.pest.pesttocvc3;
 
 public class VarReplacement {
 	

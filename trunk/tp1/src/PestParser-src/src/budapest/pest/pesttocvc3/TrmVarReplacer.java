@@ -1,4 +1,4 @@
-package budapest.pest.vcgenerator;
+package budapest.pest.pesttocvc3;
 
 import budapest.pest.ast.pred.trm.ArrayAccessTrm;
 import budapest.pest.ast.pred.trm.ArraySizeTrm;
