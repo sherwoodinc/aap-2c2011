@@ -30,6 +30,10 @@ public class PestVarContext {
 		parent = parentContext;
 	}
 	
+	public void SetLabel(String s){
+		label = s;
+	}
+	
 	// Obtiene el último nombre asignado a una var
 	public String getVarAssignment(String varName) throws Exception {
 		if (valuations.containsKey(varName)) {
@@ -93,4 +97,5 @@ public class PestVarContext {
 	private TreeMap<String, String> valuations;
 
 	private static int GlobalID = 0;
+	private String label = "";
 }

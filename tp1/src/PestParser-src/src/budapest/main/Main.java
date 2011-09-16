@@ -25,7 +25,7 @@ public class Main {
 	private static Boolean isDebugging = true;
 	private static Boolean executeCVC3 = true;
 	private static OutputType outputType = OutputType.FILE;
-	private static String inputFile = "tests/test4.pest";
+	private static String inputFile = "tests/test9.pest";
 			
 	public static void main(String[] args) {
 				

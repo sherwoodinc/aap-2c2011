@@ -223,20 +223,47 @@ public final class PestToCVC3Translator extends PestVisitor<Pred, Pred> {
 
 	public Pred visit(LoopStmt n, Pred d){
 		//TODO
-		
+		/*
 		PestVarContext ctxInicial = context;
 		PestVarContext ctxLoop = new PestVarContext();
 		
 		//Conditions as Pred...
 		Pred conditionPred = n.condition.accept(new ExpToPredTranslator(), null);
-		Pred conditionPred = n.condition.accept(new ExpToPredTranslator(), null);
-
+		
 		//Translate the context
 		Pred conditionPredc = context.translate(conditionPred);
 		String Cond = conditionPredc.accept(new PredToCVC3Translator(), null);
-		System.out.println("%%% -> LOOP cond: " + conditionPred.accept(new PredPrinter(), null));		
-
-		// Pruebo I
+		System.out.println("%%% -> LOOP cond: " + conditionPred.accept(new PredPrinter(), null));
+		
+		//Invariant as Pred...
+		Pred invariantPred = context.translate(n.invariant);
+		String invariant = invariantPred.accept(new PredToCVC3Translator(), null);
+		System.out.println("%%% -> LOOP inv: " + invariantPred.accept(new PredPrinter(), null));
+		
+		Trm variantTrm = context.translate(n.variant);
+		System.out.println("%%% -> LOOP var: "+variantTrm.toString());		
+		
+		// Pruebo 1:
+		// Antes del ciclo debe valer el invariante 
+		System.out.println("%%% 1 - Antes del ciclo debe valer el invariante:");
+		//System.out.println("ASSERT (" + Cond + " );" );
+		System.out.println("QUERY (" + invariant + " );" );
+		// Pruebo 2:
+		// En una iteracion cualquiera se preserva el invariante
+		System.out.println("%%% 2 - En una iteracion cualquiera se preserva el invariante");
+		
+		//me tengo que crear un nuevo contexto para una iteracion cualquiera
+		PestVarContext contextIt = new PestVarContext();
+		context.SetLabel("It");
+		Pred invariantPredIt = context.translate(n.invariant);
+		String invariantIt = invariantPredIt.accept(new PredToCVC3Translator(), null);
+		System.out.println("ASSERT (" + invariantIt + " );" );
+		*/
+		// Pruebo 3:
+		// Luego del ciclo
+		
+		// Pruebo 4:
+		// variante decrece
 		
 		
 		
