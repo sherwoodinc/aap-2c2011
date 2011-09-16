@@ -14,6 +14,8 @@ import budapest.pest.ast.proc.Program;
 import budapest.pest.parser.ParseException;
 import budapest.pest.parser.PestParser;
 import budapest.pest.pesttocvc3.PestToCVC3Exception;
+import budapest.pest.pesttocvc3.PestToCVC3Translator;
+import budapest.pest.predtocvc3.PredToCVC3Translator;
 
 public class Main {
 
@@ -23,7 +25,7 @@ public class Main {
 	private static Boolean isDebugging = true;
 	private static Boolean executeCVC3 = true;
 	private static OutputType outputType = OutputType.FILE;
-	private static String inputFile = "tests/test5.pest";
+	private static String inputFile = "tests/test1.pest";
 			
 	public static void main(String[] args) {
 				
@@ -119,8 +121,8 @@ public class Main {
 	private static String GetCVC3StringFromProgram(Program p) throws PestToCVC3Exception {
 		try
 		{
-			/*Pred vc = new PestVCGenerator().execute(p);
-			return new PredToCVC3Translator().execute(vc);*/
+			//Pred vc = new PestVCGenerator().execute(p);
+			new PestToCVC3Translator().execute(p);
 			return "CVC";
 		}
 		catch(Exception e)

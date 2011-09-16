@@ -1,5 +1,7 @@
 package budapest.pest.pesttocvc3;
 
+import java.util.TreeSet;
+
 import budapest.pest.ast.pred.trm.Trm;
 import budapest.pest.ast.pred.BinaryPred;
 import budapest.pest.ast.pred.NotPred;
@@ -19,9 +21,13 @@ import budapest.pest.ast.stmt.LoopStmt;
 import budapest.pest.ast.stmt.SeqStmt;
 import budapest.pest.ast.stmt.SkipStmt;
 import budapest.pest.ast.visitor.PestVisitor;
+import budapest.pest.dump.pest.PredPrinter;
+import budapest.pest.dump.pest.TrmPrinter;
+import budapest.pest.predtocvc3.PredToCVC3Translator;
 import budapest.pest.predtocvc3.PredVarManager;
 import budapest.pest.predtocvc3.PredVarReplacer;
 import budapest.pest.predtocvc3.TrmVarReplacer;
+import budapest.pest.pesttocvc3.PestVarContext;
 
 public final class PestToCVC3Translator extends PestVisitor<Pred, Pred> {
 
@@ -36,17 +42,52 @@ public final class PestToCVC3Translator extends PestVisitor<Pred, Pred> {
 	}
 
 	public Pred visit(Procedure n, Pred requires) {
-		return n.stmt.accept(this, requires);
+		// Crear contexto con vars
+		PestVarContext ctxInicial; 
+		if (context != null)
+			ctxInicial = new PestVarContext(context);
+		else
+			ctxInicial = new PestVarContext();
+
+		for (String param: n.paramNames())
+		{
+			// A la vez agrego parametros al context y hagoel output 
+			System.out.println(ctxInicial.setVarAssignment(param)+": INT;");
+		}
+
+		// Creamos context hijo para la recursion
+		context = new PestVarContext(ctxInicial);		
+
+		// Reemplazar en el pre e imprimir, con el context inicial 
+		Pred pre = ctxInicial.translate(n.pre);
+		System.out.println("ASSERT (" + pre.accept(new PredToCVC3Translator(), null) + ");");
+		// Creo un context hijo
+		context = new PestVarContext(context);
+		Pred ret = n.stmt.accept(this, requires);
+		// Reemplazar en el post e imprimr 
+		Pred post = context.translate(n.post);
+		System.out.println("QUERY (" + post.accept(new PredToCVC3Translator(), null) + ");");
+		
+		return ret;
 	}
 
-	public Pred visit(AssignStmt n, Pred p) {
+	public Pred visit(AssignStmt n, Pred p) {			
+		
 		String var = n.left.name;
 		String freshVar = new PredVarManager().getFreshVar(p);
 
 		Trm rightAsTrm = n.right.accept(new ExpToTrmTranslator(), null);
-
+		
 		//E[x->x']
 		Trm replacedTrm = rightAsTrm.accept(new TrmVarReplacer(), new VarReplacement(var, freshVar));
+		
+		// Reemplazo el lado derecho y luego actualizo el context.
+		Trm replacedTrmc = context.translate(rightAsTrm);
+		String newVar = context.setVarAssignment(var);		
+		System.out.println(newVar + ": INT;");
+		System.out.println("ASSERT ("+newVar+" = "+replacedTrmc.accept(new TrmPrinter(), null)+");");
+		
+		// Lo que sigue ya no hace falta en la version contexts...
 
 		//A[x->x']
 		Pred left = p.accept(new PredVarReplacer(), new VarReplacement(var, freshVar));
@@ -77,8 +118,19 @@ public final class PestToCVC3Translator extends PestVisitor<Pred, Pred> {
 
 	public Pred visit(IfStmt n, Pred p) {
 		
+		// Create contexts
+		PestVarContext ctxInicial = context;
+		PestVarContext ctxThen = new PestVarContext(context);
+		PestVarContext ctxElse = new PestVarContext(context);
+			
 		//Condition as Pred...
 		Pred conditionPred = n.condition.accept(new ExpToPredTranslator(), null);
+
+		//Translate the context
+		Pred conditionPredc = context.translate(conditionPred);
+		
+		// Switch to the Then context
+		context = ctxThen;
 
 		//Condition && Post(ThenS)
 		Pred andLeft = new BinaryPred(p.line,
@@ -98,6 +150,9 @@ public final class PestToCVC3Translator extends PestVisitor<Pred, Pred> {
 					p);
 		}else{
 		
+			// Switch to the Else context
+			context = ctxElse;
+
 			//!Condition && Post(ElseS)
 			andRight = new BinaryPred(p.line,
 					p.column,
@@ -106,6 +161,12 @@ public final class PestToCVC3Translator extends PestVisitor<Pred, Pred> {
 					n.elseS.accept(this, p));
 		}	
 	
+		// Join de los contextos en el contexto original (TODO)
+		TreeSet<String> valuations = ctxThen.localVarNames();
+				
+		// Restauro el contexto original
+		context = ctxInicial;
+		
 		//(Condition && Post(ThenS)) OR (!Condition && Post(ElseS))
 		ret = new BinaryPred(p.line,
 					p.column,
@@ -144,4 +205,6 @@ public final class PestToCVC3Translator extends PestVisitor<Pred, Pred> {
 		//TODO
 		return d;
 	}
+	
+	protected PestVarContext context;  
 }

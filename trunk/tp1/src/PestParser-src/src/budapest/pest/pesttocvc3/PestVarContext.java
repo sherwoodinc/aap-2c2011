@@ -2,10 +2,13 @@ package budapest.pest.pesttocvc3;
 
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.Map.Entry;
 
 import budapest.pest.ast.pred.Pred;
+import budapest.pest.ast.pred.trm.Trm;
 import budapest.pest.predtocvc3.PredVarReplacer;
+import budapest.pest.predtocvc3.TrmVarReplacer;
 
 public class PestVarContext {
 
@@ -49,14 +52,32 @@ public class PestVarContext {
 	// Reemplaza las ocurrencias de cada variable por su
 	// renombre del context, además usando contexts padres
 	public Pred translate(Pred input) {
+		Pred p = input;
 		Map<String, String> vals = allValuations();
 		PredVarReplacer r = new PredVarReplacer();
 		for (Entry<String, String> pair : vals.entrySet()) {
-			r.visit(input, new VarReplacement(pair.getKey(), pair.getValue()));
+			p = p.accept(r, new VarReplacement(pair.getKey(), pair.getValue()));
 		}
-		return input;
+		return p;
 	}
 
+	// Reemplaza las ocurrencias de cada variable PEST por su
+	// renombre del context, además usando contexts padres
+	public Trm translate(Trm input) {
+		Trm p = input;
+		Map<String, String> vals = allValuations();
+		TrmVarReplacer r = new TrmVarReplacer();
+		for (Entry<String, String> pair : vals.entrySet()) {
+			p = p.accept(r, new VarReplacement(pair.getKey(), pair.getValue()));
+		}
+		return p;
+	}
+
+	// Variables (PEST) pisadas en este contexto
+	public TreeSet<String> localVarNames() {
+		return new TreeSet<String>(valuations.keySet());
+	}
+	
 	private TreeMap<String, String> allValuations() {
 		if (parent == null) {
 			return new TreeMap<String, String>(valuations);
