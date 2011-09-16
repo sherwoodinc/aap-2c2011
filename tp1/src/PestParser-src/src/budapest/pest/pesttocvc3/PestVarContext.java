@@ -24,10 +24,10 @@ public class PestVarContext {
 		parent = null;
 	}
 	
-	public PestVarContext(PestVarContext context) {
-		InitVariables = new TreeMap<String, String>(context.InitVariables);
-		valuations = new TreeMap<String, String>(context.valuations);
-		parent = context.parent;
+	public PestVarContext(PestVarContext parentContext) {
+		InitVariables = new TreeMap<String, String>();
+		valuations = new TreeMap<String, String>();
+		parent = parentContext;
 	}
 	
 	// Obtiene el último nombre asignado a una var
@@ -74,7 +74,7 @@ public class PestVarContext {
 	}
 
 	// Variables (PEST) pisadas en este contexto
-	public TreeSet<String> localVarNames() {
+	public TreeSet<String> rewrittenVarNames() {
 		return new TreeSet<String>(valuations.keySet());
 	}
 	

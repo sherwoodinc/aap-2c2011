@@ -21,6 +21,7 @@ import budapest.pest.ast.stmt.LoopStmt;
 import budapest.pest.ast.stmt.SeqStmt;
 import budapest.pest.ast.stmt.SkipStmt;
 import budapest.pest.ast.visitor.PestVisitor;
+import budapest.pest.dump.pest.ExpPrinter;
 import budapest.pest.dump.pest.PredPrinter;
 import budapest.pest.dump.pest.TrmPrinter;
 import budapest.pest.predtocvc3.PredToCVC3Translator;
@@ -43,36 +44,32 @@ public final class PestToCVC3Translator extends PestVisitor<Pred, Pred> {
 
 	public Pred visit(Procedure n, Pred requires) {
 		// Crear contexto con vars
-		PestVarContext ctxInicial; 
-		if (context != null)
-			ctxInicial = new PestVarContext(context);
-		else
-			ctxInicial = new PestVarContext();
+		PestVarContext ctxInicial = context;
+		context = new PestVarContext(ctxInicial);
+		//PestVarContext ctxretorno = context;
 
+		System.out.println("%%% PROC: " + n.name);
+		System.out.println("%%% PARAMS: ");
 		for (String param: n.paramNames())
 		{
-			// A la vez agrego parametros al context y hagoel output 
-			System.out.println(ctxInicial.setVarAssignment(param)+": INT;");
+			// A la vez agrego parametros al context y hago el output 
+			System.out.println(context.setVarAssignment(param)+": INT;");
 		}
 
-		// Creamos context hijo para la recursion
-		context = new PestVarContext(ctxInicial);		
-
 		// Reemplazar en el pre e imprimir, con el context inicial 
-		Pred pre = ctxInicial.translate(n.pre);
+		Pred pre = context.translate(n.pre);
+		System.out.println("%%% PRE: " + pre.accept(new PredToCVC3Translator(), null));
 		System.out.println("ASSERT (" + pre.accept(new PredToCVC3Translator(), null) + ");");
-		// Creo un context hijo
-		context = new PestVarContext(context);
 		Pred ret = n.stmt.accept(this, requires);
 		// Reemplazar en el post e imprimr 
 		Pred post = context.translate(n.post);
+		System.out.println("%%% POST: " + post.accept(new PredToCVC3Translator(), null));
 		System.out.println("QUERY (" + post.accept(new PredToCVC3Translator(), null) + ");");
 		
 		return ret;
 	}
 
 	public Pred visit(AssignStmt n, Pred p) {			
-		
 		String var = n.left.name;
 		String freshVar = new PredVarManager().getFreshVar(p);
 
@@ -117,9 +114,9 @@ public final class PestToCVC3Translator extends PestVisitor<Pred, Pred> {
 	}
 
 	public Pred visit(IfStmt n, Pred p) {
-		
+				
 		// Create contexts
-		PestVarContext ctxInicial = context;
+		PestVarContext ctxReturn = context;
 		PestVarContext ctxThen = new PestVarContext(context);
 		PestVarContext ctxElse = new PestVarContext(context);
 			
@@ -128,10 +125,13 @@ public final class PestToCVC3Translator extends PestVisitor<Pred, Pred> {
 
 		//Translate the context
 		Pred conditionPredc = context.translate(conditionPred);
+		String Cond = conditionPredc.accept(new PredToCVC3Translator(), null);
+		System.out.println("%%% -> IF " + Cond);
 		
 		// Switch to the Then context
 		context = ctxThen;
 
+		System.out.println("%%% -> THEN");
 		//Condition && Post(ThenS)
 		Pred andLeft = new BinaryPred(p.line,
 				p.column,
@@ -140,7 +140,11 @@ public final class PestToCVC3Translator extends PestVisitor<Pred, Pred> {
 				n.thenS.accept(this, p));
 
 		Pred ret, andRight;
+				
 		
+		// Switch to the Else context
+		context = ctxElse;
+
 		if( n.elseS instanceof SkipStmt ){
 			//If without Else
 			andRight = new BinaryPred(p.line,
@@ -150,9 +154,7 @@ public final class PestToCVC3Translator extends PestVisitor<Pred, Pred> {
 					p);
 		}else{
 		
-			// Switch to the Else context
-			context = ctxElse;
-
+			System.out.println("%%% -> ELSE " + Cond);
 			//!Condition && Post(ElseS)
 			andRight = new BinaryPred(p.line,
 					p.column,
@@ -161,12 +163,50 @@ public final class PestToCVC3Translator extends PestVisitor<Pred, Pred> {
 					n.elseS.accept(this, p));
 		}	
 	
-		// Join de los contextos en el contexto original (TODO)
-		TreeSet<String> valuations = ctxThen.localVarNames();
-				
-		// Restauro el contexto original
-		context = ctxInicial;
+		// Join de los contextos en el contexto original
+		TreeSet<String> varsSoloThen = ctxThen.rewrittenVarNames();
+		TreeSet<String> varsElse = ctxElse.rewrittenVarNames();
+		TreeSet<String> varsComunes = ctxThen.rewrittenVarNames();		
+		varsComunes.retainAll(varsElse);
+		varsSoloThen.removeAll(varsElse);
+		TreeSet<String> varsTodas = ctxThen.rewrittenVarNames();
+		varsTodas.addAll(varsElse);
 		
+		// Restauro el contexto original
+		context = ctxReturn;
+
+		// Por cada var que pudo ser tocada, genera un nuevo nombre 
+		// y las implicaciones pertinentes.
+		System.out.println("%%% -> JOIN " + Cond);
+		try {
+			
+		for (String var: varsTodas)	{
+			String oldVar = context.getVarAssignment(var);
+					if (varsComunes.contains(var)) {																
+						String newVar = context.setVarAssignment(var);
+						System.out.println(newVar + ": INT;");
+						System.out.println("ASSERT (" + Cond + " => "+newVar+ " = " + ctxThen.getVarAssignment(var) + " );" );
+						System.out.println("ASSERT ( NOT " + Cond + " => "+newVar+ " = " + ctxElse.getVarAssignment(var) + " );" );
+					}
+					else if (varsSoloThen.contains(var)) {
+						String newVar = context.setVarAssignment(var);
+						System.out.println(newVar + ": INT;");
+						System.out.println("ASSERT (" + Cond + " => "+newVar+ " = " + ctxThen.getVarAssignment(var) + " );" );
+						System.out.println("ASSERT ( NOT " + Cond + " => "+newVar+ " = " + oldVar + " );" );
+					}
+					else if (varsElse.contains(var)) {
+						String newVar = context.setVarAssignment(var);
+						System.out.println(newVar + ": INT;");
+						System.out.println("ASSERT (" + Cond + " => "+newVar+ " = " + oldVar + " );" );
+						System.out.println("ASSERT ( NOT " + Cond + " => "+newVar+ " = " + ctxElse.getVarAssignment(var) + " );" );
+					}
+				}
+		} catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+				
+		System.out.println("%%% <- IF " + Cond);
 		//(Condition && Post(ThenS)) OR (!Condition && Post(ElseS))
 		ret = new BinaryPred(p.line,
 					p.column,
@@ -183,6 +223,23 @@ public final class PestToCVC3Translator extends PestVisitor<Pred, Pred> {
 
 	public Pred visit(LoopStmt n, Pred d){
 		//TODO
+		
+		PestVarContext ctxInicial = context;
+		PestVarContext ctxLoop = new PestVarContext();
+		
+		//Conditions as Pred...
+		Pred conditionPred = n.condition.accept(new ExpToPredTranslator(), null);
+		Pred conditionPred = n.condition.accept(new ExpToPredTranslator(), null);
+
+		//Translate the context
+		Pred conditionPredc = context.translate(conditionPred);
+		String Cond = conditionPredc.accept(new PredToCVC3Translator(), null);
+		System.out.println("%%% -> LOOP cond: " + conditionPred.accept(new PredPrinter(), null));		
+
+		// Pruebo I
+		
+		
+		
 		return d;
 	}
 	
