@@ -1,0 +1,15 @@
+swap(a,b)
+:? true
+:! (b=a@pre) && (a=b@pre)
+:* a,b
+{
+  local temp <- a
+  if (temp>0) then {
+    a <- b
+    b <- temp
+  } else {
+    a <- b
+    b <- temp
+  } 
+}
+
