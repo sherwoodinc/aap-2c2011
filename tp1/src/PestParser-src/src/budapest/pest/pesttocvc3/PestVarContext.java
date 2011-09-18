@@ -34,6 +34,14 @@ public class PestVarContext {
 		label = s;
 	}
 	
+	public void copyContext(PestVarContext context) {
+		for(Map.Entry<String, String> valuation : context.allValuations().entrySet()){
+			setVarAssignment(valuation.getKey());
+			
+			//System.out.println("Fer: "+valuation.getKey()+ " - "+valuation.getValue());
+		}
+	}
+	
 	// Obtiene el último nombre asignado a una var
 	public String getVarAssignment(String varName) throws Exception {
 		if (valuations.containsKey(varName)) {
@@ -47,7 +55,7 @@ public class PestVarContext {
 
     // Genera un nombre nuevo y lo devuelve
     public String setVarAssignment(String varName) {
-            String newSnapshot = varName + String.valueOf(GlobalID);
+            String newSnapshot = varName + label + String.valueOf(GlobalID);
             valuations.put(varName, newSnapshot);
             GlobalID++;
             return newSnapshot;
@@ -82,7 +90,7 @@ public class PestVarContext {
 		return new TreeSet<String>(valuations.keySet());
 	}
 	
-	private TreeMap<String, String> allValuations() {
+	public TreeMap<String, String> allValuations() {
 		if (parent == null) {
 			return new TreeMap<String, String>(valuations);
 		} else {
@@ -90,6 +98,10 @@ public class PestVarContext {
 			ret.putAll(valuations);
 			return ret;
 		}
+	}
+	
+	public String toString() {
+		return "Init: " + InitVariables + " - Var: " + valuations;		
 	}
 
 	private PestVarContext parent = null;
