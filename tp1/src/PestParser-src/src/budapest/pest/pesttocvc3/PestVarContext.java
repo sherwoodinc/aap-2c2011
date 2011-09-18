@@ -37,8 +37,6 @@ public class PestVarContext {
 	public void copyContext(PestVarContext context) {
 		for(Map.Entry<String, String> valuation : context.allValuations().entrySet()){
 			setVarAssignment(valuation.getKey());
-			
-			//System.out.println("Fer: "+valuation.getKey()+ " - "+valuation.getValue());
 		}
 	}
 	
