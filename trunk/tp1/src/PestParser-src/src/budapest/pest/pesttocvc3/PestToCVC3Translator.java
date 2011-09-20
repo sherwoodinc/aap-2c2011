@@ -34,7 +34,7 @@ import budapest.pest.predtocvc3.PredVarReplacer;
 import budapest.pest.predtocvc3.TrmVarReplacer;
 import budapest.pest.pesttocvc3.PestVarContext;
 
-public final class PestToCVC3Translator extends PestVisitor<Pred, Pred> {
+public final class PestToCVC3Translator extends PestVisitor<String, String> {
 
 	public PestToCVC3Translator() {}
 	
@@ -42,93 +42,85 @@ public final class PestToCVC3Translator extends PestVisitor<Pred, Pred> {
 		context = cntxt;
 	}
 	
-	public Pred execute(Program n) {
+	public String execute(Program n) {
 		Procedure main = n.getMain();
-		Pred computedPost = main.accept(this, main.pre);
-		return new BinaryPred(computedPost.line,
-				computedPost.column,
-				computedPost,
-				BinaryPred.Operator.IMPLIES,
-				main.post);
+		return visit(main,"");//main.accept(this, "");
 	}
 
-	public Pred visit(Procedure n, Pred requires) {
+	public String visit(Procedure n, String cvcin) {
+		String cvcout = "";
 		// Crear contexto con vars
-		PestVarContext ctxInicial = context;
+		PestVarContext ctxInicial = new PestVarContext();
 		context = new PestVarContext(ctxInicial);
 		//PestVarContext ctxretorno = context;
 
-		System.out.println("%%% PROC: " + n.name);
-		System.out.println("%%% PARAMS: ");
+		cvcout += "%%% PROC: " + n.name + "\n";
+		cvcout += "%%% PARAMS:\n";
 		for (String param: n.paramNames())
 		{
 			// A la vez agrego parametros al context y hago el output 
-			System.out.println(context.setVarAssignment(param)+": INT;");
+			cvcout += ctxInicial.setVarAssignment(param)+": INT;\n";
 		}
 
 		// Reemplazar en el pre e imprimir, con el context inicial 
 		Pred pre = context.translate(n.pre);
-		System.out.println("%%% PRE: " + pre.accept(new PredToCVC3Translator(), null));
-		System.out.println("ASSERT (" + pre.accept(new PredToCVC3Translator(), null) + ");");
+		cvcout += "%%% PRE: " + pre.accept(new PredToCVC3Translator(), null)+"\n";
+		cvcout += "ASSERT (" + pre.accept(new PredToCVC3Translator(), null) + ");\n";
 		
 		statements = n.stmt;
 		precondition = n.pre;
 		postcondition = n.post;
-		Pred ret = n.stmt.accept(this, requires);
+		cvcout += n.stmt.accept(this, null);
 				
 		// Reemplazar en el post e imprimr 
 		Pred post = context.translate(n.post);
-		System.out.println("%%% POST: " + post.accept(new PredToCVC3Translator(), null));
-		System.out.println("QUERY (" + post.accept(new PredToCVC3Translator(), null) + ");");
+		String postStr = "%%% POST: " + post.accept(new PredToCVC3Translator(), null) + "\n" +
+						 "QUERY (" + post.accept(new PredToCVC3Translator(), null) + ");\n";
 		
-		return ret;
+		// Replace @pre
+		for (String param: n.paramNames())
+		{
+			try {
+				postStr = postStr.replace(context.getVarAssignment(param)+"@pre", ctxInicial.getVarAssignment(param));
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		cvcout += postStr;
+				
+		return cvcout;
 	}
 
-	public Pred visit(AssignStmt n, Pred p) {			
+	public String visit(AssignStmt n, String cvcin) {			
+		String cvcout = "";
 		String var = n.left.name;
-		String freshVar = new PredVarManager().getFreshVar(p);
 
 		Trm rightAsTrm = n.right.accept(new ExpToTrmTranslator(), null);
-		
-		//E[x->x']
-		Trm replacedTrm = rightAsTrm.accept(new TrmVarReplacer(), new VarReplacement(var, freshVar));
-		
+			
 		// Reemplazo el lado derecho y luego actualizo el context.
 		Trm replacedTrmc = context.translate(rightAsTrm);
-		String newVar = context.setVarAssignment(var);		
-		System.out.println(newVar + ": INT;");
-		System.out.println("ASSERT ("+newVar+" = "+replacedTrmc.accept(new TrmPrinter(), null)+");");
+		String newVar = context.setVarAssignment(var);
+		context.setWasAssigned(var);
+		cvcout += newVar + ": INT;\n";
+		cvcout += "ASSERT ("+newVar+" = "+replacedTrmc.accept(new TrmPrinter(), null)+");\n";
 		
-		// Lo que sigue ya no hace falta en la version contexts...
+		return cvcout;
 		
-		//A[x->x']
-		Pred left = p.accept(new PredVarReplacer(), new VarReplacement(var, freshVar));
-
-		//x==E[x->x']
-		Pred right = new RelationPred(p.line,
-				p.column,
-				new VarTrm(p.line, p.column, var, Trm.Type.CURR_VALUE),
-				RelationPred.Operator.EQ,
-				replacedTrm);
-
-		//A[x->x'] && x==E[x->x']
-		return new BinaryPred(p.line,
-				p.column,
-				left,
-				BinaryPred.Operator.AND,
-				right);
 	}
 
-	public Pred visit(SeqStmt n, Pred p) {
-		Pred s1 = n.s1.accept(this, p);
-		return n.s2.accept(this, s1);
+	public String visit(SeqStmt n, String cvcin) {
+		String s1 = n.s1.accept(this, null);
+		return s1 + n.s2.accept(this, null);
 	}
 
-	public Pred visit(SkipStmt n, Pred p) {
-		return p;
+	public String visit(SkipStmt n, String cvcin) {
+		return "\n";
 	}
 
-	public Pred visit(IfStmt n, Pred p) {
+	public String visit(IfStmt n, String cvcin) {
+		String cvcout = "";
 				
 		// Create contexts
 		PestVarContext ctxReturn = context;
@@ -141,43 +133,20 @@ public final class PestToCVC3Translator extends PestVisitor<Pred, Pred> {
 		//Translate the context
 		Pred conditionPredc = context.translate(conditionPred);
 		String Cond = conditionPredc.accept(new PredToCVC3Translator(), null);
-		System.out.println("%%% -> IF " + Cond);
+		cvcout += "%%% -> IF " + Cond+"\n";
 		
 		// Switch to the Then context
 		context = ctxThen;
 
-		System.out.println("%%% -> THEN");
-		//Condition && Post(ThenS)
-		Pred andLeft = new BinaryPred(p.line,
-				p.column,
-				conditionPred,
-				BinaryPred.Operator.AND,
-				n.thenS.accept(this, p));
-
-		Pred ret, andRight;
+		cvcout += "%%% -> THEN\n";
+		cvcout += n.thenS.accept(this, null);
 				
 		
 		// Switch to the Else context
 		context = ctxElse;
-
-		if( n.elseS instanceof SkipStmt ){
-			//If without Else
-			andRight = new BinaryPred(p.line,
-					p.column,
-					new NotPred(p.line, p.column, conditionPred),
-					BinaryPred.Operator.AND,
-					p);
-		}else{
-		
-			System.out.println("%%% -> ELSE " + Cond);
-			//!Condition && Post(ElseS)
-			andRight = new BinaryPred(p.line,
-					p.column,
-					new NotPred(p.line, p.column, conditionPred),
-					BinaryPred.Operator.AND,
-					n.elseS.accept(this, p));
-		}	
-	
+		cvcout += "%%% -> ELSE " + Cond+"\n";
+		cvcout += n.elseS.accept(this, null);
+				
 		// Join de los contextos en el contexto original
 		TreeSet<String> varsSoloThen = ctxThen.rewrittenVarNames();
 		TreeSet<String> varsElse = ctxElse.rewrittenVarNames();
@@ -192,28 +161,28 @@ public final class PestToCVC3Translator extends PestVisitor<Pred, Pred> {
 
 		// Por cada var que pudo ser tocada, genera un nuevo nombre 
 		// y las implicaciones pertinentes.
-		System.out.println("%%% -> JOIN " + Cond);
+		cvcout += "%%% -> JOIN " + Cond+"\n";
 		try {
 			
 		for (String var: varsTodas)	{
 			String oldVar = context.getVarAssignment(var);
 					if (varsComunes.contains(var)) {																
 						String newVar = context.setVarAssignment(var);
-						System.out.println(newVar + ": INT;");
-						System.out.println("ASSERT (" + Cond + " => "+newVar+ " = " + ctxThen.getVarAssignment(var) + " );" );
-						System.out.println("ASSERT ( NOT " + Cond + " => "+newVar+ " = " + ctxElse.getVarAssignment(var) + " );" );
+						cvcout += newVar + ": INT;\n";
+						cvcout += "ASSERT (" + Cond + " => "+newVar+ " = " + ctxThen.getVarAssignment(var) + " );\n";
+						cvcout += "ASSERT ( NOT " + Cond + " => "+newVar+ " = " + ctxElse.getVarAssignment(var) + " );\n";
 					}
 					else if (varsSoloThen.contains(var)) {
 						String newVar = context.setVarAssignment(var);
-						System.out.println(newVar + ": INT;");
-						System.out.println("ASSERT (" + Cond + " => "+newVar+ " = " + ctxThen.getVarAssignment(var) + " );" );
-						System.out.println("ASSERT ( NOT " + Cond + " => "+newVar+ " = " + oldVar + " );" );
+						cvcout += newVar + ": INT;\n";
+						cvcout += "ASSERT (" + Cond + " => "+newVar+ " = " + ctxThen.getVarAssignment(var) + " );\n";
+						cvcout += "ASSERT ( NOT " + Cond + " => "+newVar+ " = " + oldVar + " );\n";
 					}
 					else if (varsElse.contains(var)) {
 						String newVar = context.setVarAssignment(var);
-						System.out.println(newVar + ": INT;");
-						System.out.println("ASSERT (" + Cond + " => "+newVar+ " = " + oldVar + " );" );
-						System.out.println("ASSERT ( NOT " + Cond + " => "+newVar+ " = " + ctxElse.getVarAssignment(var) + " );" );
+						cvcout += newVar + ": INT;\n";
+						cvcout += "ASSERT (" + Cond + " => "+newVar+ " = " + oldVar + " );\n";
+						cvcout += "ASSERT ( NOT " + Cond + " => "+newVar+ " = " + ctxElse.getVarAssignment(var) + " );\n";
 					}
 				}
 		} catch (Exception e)
@@ -221,139 +190,95 @@ public final class PestToCVC3Translator extends PestVisitor<Pred, Pred> {
 			e.printStackTrace();
 		}
 				
-		System.out.println("%%% <- IF " + Cond);
-		//(Condition && Post(ThenS)) OR (!Condition && Post(ElseS))
-		ret = new BinaryPred(p.line,
-					p.column,
-					andLeft,
-					BinaryPred.Operator.OR,
-					andRight);
+		cvcout += "%%% <- IF " + Cond+"\n";
 		
-		return ret;
+		return cvcout;
 	}
 	
-	public Pred visit(BlockStmt n, Pred p){
-		return n.stmt.accept(this, p);
+	public String visit(BlockStmt n, String cvcin){
+		return n.stmt.accept(this, null);
 	}
 
-	public Pred visit(LoopStmt n, Pred d){
-		
-		System.out.println("%%% INICIO CICLO");
+	public String visit(LoopStmt n, String cvcin){
+		String cvcout = "";
+		cvcout += "%%% INICIO CICLO\n";
 		//Conditions as Pred...
 		Pred conditionPred = n.condition.accept(new ExpToPredTranslator(), null);
 		
-		//obtengo el codigo antes y despues del ciclo
-		List<Stmt> list = StmtAsList(statements);
-		List<Stmt> prevCode = new ArrayList<Stmt>();
-		List<Stmt> nextCode = new ArrayList<Stmt>();
-		
-		Integer indexLoop = 0;
-		for(int i=0; i< list.size() ; i++){
-			if(list.get(i) == n) indexLoop = i;
-		}	
-		prevCode = list.subList(0, indexLoop);
-		nextCode = list.subList(indexLoop+1, list.size());
-		
 		// Pruebo 1:
 		// Antes del ciclo debe valer el invariante 
-		System.out.println("%%% 1 - Antes del ciclo debe valer el invariante:");
-		//System.out.println("ASSERT (" + Cond + " );" );
-		PestVarContext contextInicio = new PestVarContext();
-		contextInicio.SetLabel("Init");
-		contextInicio.copyContext(context);
+		cvcout += "%%% 1 - Antes del ciclo debe valer el invariante:\n";
 		
-		TreeMap<String, String> valuation = contextInicio.allValuations();	
-		for(Entry<String, String> entry : valuation.entrySet()) {
-			  System.out.println(entry.getValue()+": INT;" );
-		}
+		//Pred pre = context.translate(precondition);
+		//cvcout += "ASSERT (" + pre.accept(new PredToCVC3Translator(), null) + ");\n";
 		
-		Pred pre = contextInicio.translate(precondition);
-		System.out.println("ASSERT (" + pre.accept(new PredToCVC3Translator(), null) + ");");
-		
-		PestToCVC3Translator inicioVisitor = new PestToCVC3Translator(contextInicio);
-		Iterator<Stmt> iterator = prevCode.iterator();
-		while(iterator.hasNext()){
-			iterator.next().accept(inicioVisitor, d);
-		}
-		
-		Pred invariantPredInit = contextInicio.translate(n.invariant);
+		Pred invariantPredInit = context.translate(n.invariant);
 		String invariantInit = invariantPredInit.accept(new PredToCVC3Translator(), null);
 		
-		System.out.println("QUERY (" + invariantInit + " );" );
+		cvcout += "QUERY (" + invariantInit + " );\n";
 		
 		// Pruebo 2:
 		// En una iteracion cualquiera se preserva el invariante
-		System.out.println("%%% 2 - En una iteracion cualquiera se preserva el invariante");
+		cvcout += "%%% 2 - En una iteracion cualquiera se preserva el invariante\n";
 		
 		//me tengo que crear un nuevo contexto para una iteracion cualquiera
 		PestVarContext contextIt = new PestVarContext();
 		contextIt.SetLabel("It");
 		contextIt.copyContext(context);
 		
-		valuation = contextIt.allValuations();	
+		TreeMap<String,String> valuation = contextIt.allValuations();	
 		for(Entry<String, String> entry : valuation.entrySet()) {
-			  System.out.println(entry.getValue()+": INT;" );
+			  cvcout += entry.getValue()+": INT;\n";
 		}
 		
 		Pred invariantPredIt = contextIt.translate(n.invariant);
 		String invariantIt = invariantPredIt.accept(new PredToCVC3Translator(), null);
-		System.out.println("ASSERT (" + invariantIt + " );" );
+		cvcout += "ASSERT (" + invariantIt + " );\n";
 		
 		Pred conditionPredIt = contextIt.translate(conditionPred);
 		String CondIt = conditionPredIt.accept(new PredToCVC3Translator(), null);
-		System.out.println("ASSERT (" + CondIt +" );" );
+		cvcout += "ASSERT (" + CondIt +" );\n";
+		
+		// Recuerdo el valor inicial del variante		
+		String v0 = contextIt.translate(n.variant).toString();
 		
 		//visitamos el cuerpo del ciclo en el contexto de iteracion
 		PestToCVC3Translator iteratorVisitor = new PestToCVC3Translator(contextIt);
-		n.body.accept(iteratorVisitor, d);
+		cvcout += n.body.accept(iteratorVisitor, null);
 		
 		Pred invariantPredItNew = contextIt.translate(n.invariant);
 		String invariantItNew = invariantPredItNew.accept(new PredToCVC3Translator(), null);
-		System.out.println("QUERY (" + invariantItNew + " );" );
+		cvcout += "QUERY (" + invariantItNew + " );\n";
 		
 		// Pruebo 4:
 		// variante decrece
-		System.out.println("%%% 4 - Variante decrece");
-		
-		PestVarContext contextDec = new PestVarContext();
-		contextDec.SetLabel("Dec");
-		contextDec.copyContext(context);
-		
-		valuation = contextDec.allValuations();	
-		for(Entry<String, String> entry : valuation.entrySet()) {
-			  System.out.println(entry.getValue()+": INT;" );
-		}
-		
-		Trm variantTrm = contextDec.translate(n.variant);
-		System.out.println("Vo: INT;");
-		System.out.println("ASSERT ( Vo = "+variantTrm.toString()+" );" );
-		
-		PestToCVC3Translator decVisitor = new PestToCVC3Translator(contextDec);
-		n.body.accept(decVisitor, d);
-		
-		variantTrm = contextDec.translate(n.variant);
-		System.out.println("QUERY ("+variantTrm.toString()+" < Vo );" );
-		
+		cvcout += "%%% 4 - Variante decrece\n";				
+		cvcout += "QUERY (" + contextIt.translate(n.variant).toString() + " < " + v0 +" );\n";
+						
 		// Pruebo 3:
 		// Luego del ciclo cumple la postcondicion
-		System.out.println("%%% 3 - Luego del ciclo cumple la postcondicion");
+		cvcout += "%%% 3 - Luego del ciclo cumple la postcondicion\n";
+
+		// Toma context pre ciclo y lo actualiza con vars asignadas en la iteración
+		TreeMap<String, String> preItVars = context.allValuations();
+		for (String var : contextIt.assignedVars())
+		{						
+			if (preItVars.containsKey(var))
+			{
+				cvcout += context.setVarAssignment(var)+": INT;\n";				
+			}
+		}
 		
 		Pred invariantPredEnd = context.translate(n.invariant);
 		String invariantEnd = invariantPredEnd.accept(new PredToCVC3Translator(), null);
-		System.out.println("ASSERT (" + invariantEnd + " );" );
+		cvcout += "ASSERT (" + invariantEnd + " );\n";
 		
 		Pred conditionPredEnd = context.translate(conditionPred);
 		String CondEnd = conditionPredEnd.accept(new PredToCVC3Translator(), null);
-		System.out.println("ASSERT ( NOT " + CondEnd +" );" );
-		
-		PestToCVC3Translator endVisitor = new PestToCVC3Translator(context);
-		iterator = nextCode.iterator();
-		while(iterator.hasNext()){
-			iterator.next().accept(endVisitor, d);
-		}
-		
-		System.out.println("%%% FIN CICLO");
-		return d;
+		cvcout += "ASSERT ( NOT " + CondEnd +" );\n";
+				
+		cvcout += "%%% FIN CICLO\n";
+		return cvcout;
 	}
 	
 	private List<Stmt> StmtAsList(Stmt s){
@@ -367,24 +292,37 @@ public final class PestToCVC3Translator extends PestVisitor<Pred, Pred> {
 		return list;
 	}
 	
-	public Pred visit(AssertStmt n, Pred d){
+	public String visit(AssertStmt n, String cvcin){
 		//TODO
-		return d;
+		
+		return "\n";
 	}
 	
-	public Pred visit(AssumeStmt n, Pred d){
+	public String visit(AssumeStmt n, String cvcin){
 		//TODO
-		return d;
+		return "\n";
 	}
 	
-	public Pred visit(CallStmt n, Pred d){
-		//TODO
-		return d;
+	public String visit(CallStmt n, String cvcin){		
+		return "\n";
 	}
 	
-	public Pred visit(LocalDefStmt n, Pred d){
-		//TODO
-		return d;
+	public String visit(LocalDefStmt n, String cvcin){
+		// Igual a un assign
+		
+		String cvcout = "";
+		String var = n.left.name;
+
+		Trm rightAsTrm = n.right.accept(new ExpToTrmTranslator(), null);
+			
+		// Reemplazo el lado derecho y luego actualizo el context.
+		Trm replacedTrmc = context.translate(rightAsTrm);
+		String newVar = context.setVarAssignment(var);		
+		cvcout += newVar + ": INT;\n";
+		cvcout += "ASSERT ("+newVar+" = "+replacedTrmc.accept(new TrmPrinter(), null)+");\n";
+		
+		// Lo que sigue ya no hace falta en la version contexts...
+		return cvcout;
 	}
 	
 	protected PestVarContext context;
