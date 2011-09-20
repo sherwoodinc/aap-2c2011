@@ -12,21 +12,23 @@ import budapest.pest.predtocvc3.TrmVarReplacer;
 
 public class PestVarContext {
 
-	public PestVarContext(PestVarContext parentContext, TreeMap<String, String> beginContext) {
-		InitVariables = new TreeMap<String, String>(beginContext);
-		valuations = new TreeMap<String, String>();
-		parent = parentContext;
-	}
+//	public PestVarContext(PestVarContext parentContext, TreeMap<String, String> beginContext) {
+//		InitVariables = new TreeMap<String, String>(beginContext);
+//		valuations = new TreeMap<String, String>();
+//		parent = parentContext;
+//	}
 
 	public PestVarContext() {
 		InitVariables = new TreeMap<String, String>();
 		valuations = new TreeMap<String, String>();
+		AssignedVars = new TreeSet<String>();		
 		parent = null;
 	}
 	
 	public PestVarContext(PestVarContext parentContext) {
 		InitVariables = new TreeMap<String, String>();
 		valuations = new TreeMap<String, String>();
+		AssignedVars = new TreeSet<String>();
 		parent = parentContext;
 	}
 	
@@ -34,12 +36,13 @@ public class PestVarContext {
 		label = s;
 	}
 	
+	// Crea un contexto completamente nuevo renombrando las variables del contexto dado y sus padres
 	public void copyContext(PestVarContext context) {
 		for(Map.Entry<String, String> valuation : context.allValuations().entrySet()){
 			setVarAssignment(valuation.getKey());
 		}
 	}
-	
+
 	// Obtiene el último nombre asignado a una var
 	public String getVarAssignment(String varName) throws Exception {
 		if (valuations.containsKey(varName)) {
@@ -56,7 +59,19 @@ public class PestVarContext {
             String newSnapshot = varName + label + String.valueOf(GlobalID);
             valuations.put(varName, newSnapshot);
             GlobalID++;
-            return newSnapshot;
+            return newSnapshot;            
+    }
+    
+    // Marca una var como asignada en el context actual
+    public void setWasAssigned(String varName)
+    {
+    	AssignedVars.add(varName);
+    }
+    
+    // Obtiene conjunto de vars asignadas en este context
+    public TreeSet<String> assignedVars()
+    {
+    	return AssignedVars;     	
     }
 
 	// Reemplaza las ocurrencias de cada variable por su
@@ -105,6 +120,7 @@ public class PestVarContext {
 	private PestVarContext parent = null;
 	private TreeMap<String, String> InitVariables;
 	private TreeMap<String, String> valuations;
+	private TreeSet<String> AssignedVars;
 
 	private static int GlobalID = 0;
 	private String label = "";
