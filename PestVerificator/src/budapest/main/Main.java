@@ -9,13 +9,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 
 import budapest.pest.ast.proc.Program;
 import budapest.pest.parser.ParseException;
 import budapest.pest.parser.PestParser;
 import budapest.pest.pesttocvc3.PestToCVC3Exception;
 import budapest.pest.pesttocvc3.PestToCVC3Translator;
-import budapest.pest.predtocvc3.PredToCVC3Translator;
 
 public class Main {
 
@@ -24,8 +24,8 @@ public class Main {
 	//Options... (In the future should be taken from args. Not now since this is better for debugging)
 	private static Boolean isDebugging = true;
 	private static Boolean executeCVC3 = true;
-	private static OutputType outputType = OutputType.FILE;
-	private static String inputFile = "tests/test9.pest";
+	private static OutputType outputType = OutputType.CONSOLE;
+	private static String inputFile = "tests/test10.pest";
 			
 	public static void main(String[] args) {
 				
@@ -97,9 +97,8 @@ public class Main {
 		int extensionIndex = fileName.lastIndexOf(".");
 		if(extensionIndex == -1)
 			result = fileName;
-		else {
+		else
 			result = fileName.substring(0, extensionIndex + 1) + extension;
-		}
 		return result;
 	}
 	
@@ -121,13 +120,11 @@ public class Main {
 	private static String GetCVC3StringFromProgram(Program p) throws PestToCVC3Exception {
 		try
 		{
-			//Pred vc = new PestVCGenerator().execute(p);
-			new PestToCVC3Translator().execute(p);
-			return "CVC";
+			return new PestToCVC3Translator().execute(p);
 		}
 		catch(Exception e)
 		{
-			ThrowPestToCVC3Exception("Ha ocurrido un error al tratar de obtener la condicion de verification en sintaxis cvc3.", e);
+			ThrowPestToCVC3Exception("Ha ocurrido un error al tratar de obtener el contenido del archivo cvc3.", e);
 		}
 		return null;
 	}
@@ -162,9 +159,13 @@ public class Main {
 	}
 	
 	private static void ThrowPestToCVC3Exception(String message, Exception e) throws PestToCVC3Exception {
-		if(isDebugging){
-			message += " Stack trace: " + e.getStackTrace();
+		if(isDebugging) {
+			StringWriter stackAsString = new StringWriter();
+			PrintWriter printWriter = new PrintWriter(stackAsString);
+			e.printStackTrace(printWriter);
+			message += " Stack trace: " + stackAsString.toString();
 		}
+		
 		throw new PestToCVC3Exception(message);
 	}
 

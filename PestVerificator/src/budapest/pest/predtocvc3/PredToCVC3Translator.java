@@ -25,9 +25,31 @@ public class PredToCVC3Translator extends PredPrinter {
 	}
 
 	public String visit(RelationPred n, Void arg) {
-		String result = super.visit(n, arg);
-		result = result.replace("!=", "/=");
-		return result;
+		String ret = n.left.accept(new TrmToCVC3Translator(), arg) + " ";
+		
+		switch(n.op) {
+		case EQ:
+			ret += "=";
+			break;
+		case GE:
+			ret += ">=";
+			break;
+		case GT:
+			ret += ">";
+			break;
+		case LE:
+			ret += "<=";
+			break;
+		case LT:
+			ret += "<";
+			break;
+		case NEQ:
+			ret += "/=";
+			break;
+		}
+		
+		ret += " " + n.right.accept(new TrmToCVC3Translator(), arg);
+		return ret;
 	}
 
 	public String visit(NotPred n, Void arg) {
@@ -35,7 +57,7 @@ public class PredToCVC3Translator extends PredPrinter {
 		result = result.replace("! ", "NOT ");
 		return result;
 	}
-
+	
 	public String visit(QuantifiedPred n, Void arg) {
 		String ret = "";
 		switch(n.type) {
@@ -49,8 +71,15 @@ public class PredToCVC3Translator extends PredPrinter {
 		ret += " (";
 		ret += n.var.toLowerCase();
 		ret += ":INT): ";
-		ret += Brackets.bracketsIfNeeded(n, n.subPred, this, arg);
-		ret += ")"; 
+		if (n.lowerBound != null && n.upperBound != null)
+		{
+			ret += " from ";
+			ret += n.lowerBound.accept(new TrmToCVC3Translator(), arg);
+			ret += " to ";
+			ret += n.upperBound.accept(new TrmToCVC3Translator(), arg);
+		}
+		ret += " : " + Brackets.bracketsIfNeeded(n, n.subPred, this, arg);
 		return ret;
 	}
+	
 }

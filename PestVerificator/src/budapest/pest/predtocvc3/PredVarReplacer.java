@@ -7,11 +7,11 @@ import budapest.pest.ast.pred.Pred;
 import budapest.pest.ast.pred.QuantifiedPred;
 import budapest.pest.ast.pred.RelationPred;
 import budapest.pest.ast.visitor.PredVisitor;
-import budapest.pest.pesttocvc3.VarReplacement;
+import budapest.pest.pesttocvc3.PestVarContext;
 
-public class PredVarReplacer extends PredVisitor<Pred, VarReplacement> {
+public class PredVarReplacer extends PredVisitor<Pred, PestVarContext> {
 	
-	public Pred visit(BinaryPred n, VarReplacement arg) {
+	public Pred visit(BinaryPred n, PestVarContext arg) {
 		return new BinaryPred(n.line,
 				n.column,
 				n.left.accept(this, arg),
@@ -19,25 +19,25 @@ public class PredVarReplacer extends PredVisitor<Pred, VarReplacement> {
 				n.right.accept(this, arg));
 	}
 	
-	public Pred visit(BooleanLiteralPred n, VarReplacement arg) {
+	public Pred visit(BooleanLiteralPred n, PestVarContext arg) {
 		return new BooleanLiteralPred(n.line, n.column, n.type);
 	}
 	
-	public Pred visit(NotPred n, VarReplacement arg) {
+	public Pred visit(NotPred n, PestVarContext arg) {
 		return new NotPred(n.line, n.column, n.subPred.accept(this, arg));
 	}
 	
-	public Pred visit(QuantifiedPred n, VarReplacement arg) {
+	public Pred visit(QuantifiedPred n, PestVarContext arg) {
 		return new QuantifiedPred(n.line,
 				n.column,
 				n.type,
-				arg.execute(n.var),
+				arg.getInstanceOf(n.var),
 				n.lowerBound != null ?  n.lowerBound.accept(new TrmVarReplacer(), arg) : null,
 			    n.upperBound != null ?  n.upperBound.accept(new TrmVarReplacer(), arg) : null,
 				n.subPred.accept(this, arg));
 	}
 	
-	public Pred visit(RelationPred n, VarReplacement arg) {
+	public Pred visit(RelationPred n, PestVarContext arg) {
 		return new RelationPred(n.line,
 				n.column,
 				n.left.accept(new TrmVarReplacer(), arg),
