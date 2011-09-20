@@ -1,9 +1,0 @@
-testIfWithoutElse(a, b)
-:? a != 0
-:! b > 0
-:* b
-{
-	if a < 0 then {
-		b <- 10
-	} 
-}
