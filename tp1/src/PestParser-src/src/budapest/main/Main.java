@@ -24,8 +24,8 @@ public class Main {
 	//Options... (In the future should be taken from args. Not now since this is better for debugging)
 	private static Boolean isDebugging = true;
 	private static Boolean executeCVC3 = true;
-	private static OutputType outputType = OutputType.FILE;
-	private static String inputFile = "tests/test9.pest";
+	private static OutputType outputType = OutputType.CONSOLE;
+	private static String inputFile = "tests/test10.pest";
 			
 	public static void main(String[] args) {
 				
@@ -121,9 +121,7 @@ public class Main {
 	private static String GetCVC3StringFromProgram(Program p) throws PestToCVC3Exception {
 		try
 		{
-			//Pred vc = new PestVCGenerator().execute(p);
-			new PestToCVC3Translator().execute(p);
-			return "CVC";
+			return new PestToCVC3Translator().execute(p);
 		}
 		catch(Exception e)
 		{
@@ -163,6 +161,7 @@ public class Main {
 	
 	private static void ThrowPestToCVC3Exception(String message, Exception e) throws PestToCVC3Exception {
 		if(isDebugging){
+			e.printStackTrace();
 			message += " Stack trace: " + e.getStackTrace();
 		}
 		throw new PestToCVC3Exception(message);
