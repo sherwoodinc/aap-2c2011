@@ -1,12 +1,17 @@
 package budapest.pest.pesttocvc3;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import budapest.pest.ast.exp.Exp;
+import budapest.pest.ast.params.ConcreteParam;
+import budapest.pest.ast.params.IntConcreteParam;
 import budapest.pest.ast.pred.Pred;
+import budapest.pest.ast.pred.trm.IntegerLiteralTrm;
 import budapest.pest.ast.pred.trm.Trm;
 import budapest.pest.ast.proc.Procedure;
 import budapest.pest.ast.proc.Program;
@@ -21,6 +26,8 @@ import budapest.pest.ast.stmt.LoopStmt;
 import budapest.pest.ast.stmt.SeqStmt;
 import budapest.pest.ast.stmt.SkipStmt;
 import budapest.pest.ast.visitor.PestVisitor;
+import budapest.pest.dump.pest.PredPrinter;
+import budapest.pest.predtocvc3.PredParamReplacer;
 import budapest.pest.predtocvc3.PredToCVC3Translator;
 import budapest.pest.predtocvc3.PredVarReplacer;
 import budapest.pest.predtocvc3.TrmToCVC3Translator;
@@ -28,25 +35,31 @@ import budapest.pest.predtocvc3.TrmVarReplacer;
 import budapest.util.FreshVarGenerator;
 
 public final class PestToCVC3Translator extends PestVisitor<String, PestVarContext> {
+	Program verifiedProgram;
 
 	public String execute(Program n) {
-		Procedure main = n.getMain();
-		
-		List<String> declaredVars = new ArrayList<String>(main.paramNames());
-		PestVarContext mainContext = new PestVarContext(declaredVars);
-		
+		verifiedProgram = n;
 		String result = "";
-		for(String var : mainContext.getVarInstances())
-			result += var + ":INT;\n";
-				
-		Pred pre = main.pre.accept(new PredVarReplacer(), mainContext);
-		result += "ASSERT " + pre.accept(new PredToCVC3Translator(), null) + ";\n"; 
 		
-		result += main.accept(this, mainContext);
-		
-		Pred post = main.post.accept(new PredVarReplacer(), mainContext);
-		result += "QUERY " + post.accept(new PredToCVC3Translator(), null) + ";";
-		
+		for (Procedure proc: n.procs)
+		{			
+			result += "%%% ENTER PROC " + proc.name + ";\n";
+			List<String> declaredVars = new ArrayList<String>(proc.paramNames());
+			PestVarContext initContext = new PestVarContext(declaredVars);
+			PestVarContext procContext = new PestVarContext(initContext);
+			
+			for(String var : initContext.getVarInstances())
+				result += var + ":INT;\n";
+					
+			Pred pre = proc.pre.accept(new PredVarReplacer(), procContext);
+			result += "ASSERT " + pre.accept(new PredToCVC3Translator(initContext), null) + ";\n"; 
+			
+			result += proc.accept(this, procContext);
+			
+			Pred post = proc.post.accept(new PredVarReplacer(), procContext);
+			result += "QUERY " + post.accept(new PredToCVC3Translator(initContext), null) + ";\n";			
+			result += "%%% EXIT PROC " + proc.name + ";\n\n";
+		}
 		return result;
 	}
 
@@ -106,31 +119,31 @@ public final class PestToCVC3Translator extends PestVisitor<String, PestVarConte
 		
 	public String visit(AssertStmt n, PestVarContext context) {
 		Pred query = n.query.accept(new PredVarReplacer(), context);
-		String queryToCVC3 = query.accept(new PredToCVC3Translator(), null);
+		String queryToCVC3 = query.accept(new PredToCVC3Translator(context), null);
 		return "QUERY (" + queryToCVC3 + ");\n";
 	}
 	
 	public String visit(AssumeStmt n, PestVarContext context) {
 		Pred hypothesis = n.hypothesis.accept(new PredVarReplacer(), context);
-		String hypothesisToCVC3 = hypothesis.accept(new PredToCVC3Translator(), null);
+		String hypothesisToCVC3 = hypothesis.accept(new PredToCVC3Translator(context), null);
 		return "QUERY (" + hypothesisToCVC3 + ");\n";
 	}
 	
 	public String visit(LoopStmt n, PestVarContext context) {
 		//Loop invariant is true before it starts...
 		Pred invBeforeStart = n.invariant.accept(new PredVarReplacer(), context);
-		String invariantToCVC3 = invBeforeStart.accept(new PredToCVC3Translator(), null);
+		String invariantToCVC3 = invBeforeStart.accept(new PredToCVC3Translator(context), null);
 		String result = "QUERY (" + invariantToCVC3 + ");\n";
 		
 		//All variables that are modified in the loop must be new...
 		PestVarContext whileContext = new PestVarContext(context);
-		Set<String> modifiedVarsInLoop = n.accept(new StmtModifiedVarGetter(), null);
+		Set<String> modifiedVarsInLoop = n.accept(new StmtModifiedVarGetter(verifiedProgram), null);
 		for(String var : modifiedVarsInLoop)
 			result += whileContext.addNewInstanceOf(var) + ":INT;\n";
 		
 		//Loop invariant is true just when started...
 		Pred invLoopStarted = n.invariant.accept(new PredVarReplacer(), whileContext);
-		invariantToCVC3 = invLoopStarted.accept(new PredToCVC3Translator(), null);
+		invariantToCVC3 = invLoopStarted.accept(new PredToCVC3Translator(context), null);
 		result += "ASSERT (" + invariantToCVC3 + ");\n";
 		
 		//Condition is true...
@@ -142,7 +155,7 @@ public final class PestToCVC3Translator extends PestVisitor<String, PestVarConte
 		String variantFunctionName = FreshVarGenerator.freshVar();
 		result += variantFunctionName + ":INT;\n";
 		Trm variantStart = n.variant.accept(new TrmVarReplacer(), whileContext);
-		String variantStartToCVC3 = variantStart.accept(new TrmToCVC3Translator(), null);
+		String variantStartToCVC3 = variantStart.accept(new TrmToCVC3Translator(context), null);
 		result += "ASSERT (" + variantFunctionName + " = " + variantStartToCVC3 + ");\n";
 		
 		//Process loop's body...
@@ -150,14 +163,14 @@ public final class PestToCVC3Translator extends PestVisitor<String, PestVarConte
 		
 		//Variant function end...
 		Trm variantEnd = n.variant.accept(new TrmVarReplacer(), whileContext);
-		String variantEndToCVC3 = variantEnd.accept(new TrmToCVC3Translator(), null);
+		String variantEndToCVC3 = variantEnd.accept(new TrmToCVC3Translator(context), null);
 		
 		//Check variant function decreases...
 		result += "QUERY (" + variantEndToCVC3 + " < " + variantFunctionName + ");\n";
 		
 		//Loop's body preserves its invariant...
 		Pred invLoopBeforeEnd = n.invariant.accept(new PredVarReplacer(), whileContext);
-		invariantToCVC3 = invLoopBeforeEnd.accept(new PredToCVC3Translator(), null);
+		invariantToCVC3 = invLoopBeforeEnd.accept(new PredToCVC3Translator(context), null);
 		result += "QUERY (" + invariantToCVC3 + ");\n";
 		
 		//We'll use new variables to replace all variables modified in the loop...
@@ -166,7 +179,7 @@ public final class PestToCVC3Translator extends PestVisitor<String, PestVarConte
 		
 		//After the loop ended, invariant is true...
 		Pred invLoopAfterEnd = n.invariant.accept(new PredVarReplacer(), context);
-		invariantToCVC3 = invLoopAfterEnd.accept(new PredToCVC3Translator(), null);
+		invariantToCVC3 = invLoopAfterEnd.accept(new PredToCVC3Translator(context), null);
 		result += "ASSERT (" + invariantToCVC3 + ");\n";
 		
 		//Loop condition is no longer valid...
@@ -178,8 +191,27 @@ public final class PestToCVC3Translator extends PestVisitor<String, PestVarConte
 	}
 	
 	public String visit(CallStmt n, PestVarContext context) {
-		//TODO
-		return null;
+		String result = "%%% CALL " + n.procName + "\n";
+		// Create var binder for this call
+		ProcVarBinder binder = new ProcVarBinder(n, verifiedProgram);
+		
+		Pred pre = binder.callee.pre.accept(new PredParamReplacer(), binder.bindings).accept(new PredVarReplacer(), context);
+
+		result += "%%% Verify PRE\n";
+		result += " QUERY ( " + pre.accept(new PredPrinter(), null) + " );\n";
+		result += "%%% Here the Procedure 'runs'...\n";
+
+		// Overwrite context with changed vars
+		for (String var: binder.touchedVars)
+		{
+			result += context.addNewInstanceOf(var) + ":INT;\n";			
+		}
+		
+		result += "%%% Assume POST\n";
+		Pred post = binder.callee.post.accept(new PredParamReplacer(), binder.bindings).accept(new PredVarReplacer(), context);		
+		result += "ASSERT ( " + post.accept(new PredToCVC3Translator(context), null)  + " );\n";
+		result += "%%% CALL DONE\n";
+		return result;
 	}
 	
 	private String getCVC3EQAssert(Exp exp, String var){

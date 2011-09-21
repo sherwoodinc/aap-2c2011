@@ -6,9 +6,16 @@ import budapest.pest.ast.pred.NotPred;
 import budapest.pest.ast.pred.QuantifiedPred;
 import budapest.pest.ast.pred.RelationPred;
 import budapest.pest.dump.pest.PredPrinter;
+import budapest.pest.pesttocvc3.PestVarContext;
 import budapest.util.printer.prec.Brackets;
 
 public class PredToCVC3Translator extends PredPrinter {
+	
+	PestVarContext initialContext;
+	
+	public PredToCVC3Translator(PestVarContext initialCtx) {
+		initialContext = initialCtx;
+	}
 
 	public String visit(BinaryPred n, Void arg) {
 		String result = super.visit(n, arg);
@@ -25,7 +32,7 @@ public class PredToCVC3Translator extends PredPrinter {
 	}
 
 	public String visit(RelationPred n, Void arg) {
-		String ret = n.left.accept(new TrmToCVC3Translator(), arg) + " ";
+		String ret = n.left.accept(new TrmToCVC3Translator(initialContext), arg) + " ";
 		
 		switch(n.op) {
 		case EQ:
@@ -48,7 +55,7 @@ public class PredToCVC3Translator extends PredPrinter {
 			break;
 		}
 		
-		ret += " " + n.right.accept(new TrmToCVC3Translator(), arg);
+		ret += " " + n.right.accept(new TrmToCVC3Translator(initialContext), arg);
 		return ret;
 	}
 
@@ -74,9 +81,9 @@ public class PredToCVC3Translator extends PredPrinter {
 		if (n.lowerBound != null && n.upperBound != null)
 		{
 			ret += " from ";
-			ret += n.lowerBound.accept(new TrmToCVC3Translator(), arg);
+			ret += n.lowerBound.accept(new TrmToCVC3Translator(initialContext), arg);
 			ret += " to ";
-			ret += n.upperBound.accept(new TrmToCVC3Translator(), arg);
+			ret += n.upperBound.accept(new TrmToCVC3Translator(initialContext), arg);
 		}
 		ret += " : " + Brackets.bracketsIfNeeded(n, n.subPred, this, arg);
 		return ret;
