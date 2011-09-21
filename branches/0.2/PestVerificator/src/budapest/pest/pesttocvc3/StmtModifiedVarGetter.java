@@ -3,11 +3,14 @@ package budapest.pest.pesttocvc3;
 import java.util.HashSet;
 import java.util.Set;
 
+import budapest.pest.ast.params.FormalParam;
 import budapest.pest.ast.proc.Procedure;
+import budapest.pest.ast.proc.Program;
 import budapest.pest.ast.stmt.AssertStmt;
 import budapest.pest.ast.stmt.AssignStmt;
 import budapest.pest.ast.stmt.AssumeStmt;
 import budapest.pest.ast.stmt.BlockStmt;
+import budapest.pest.ast.stmt.CallStmt;
 import budapest.pest.ast.stmt.IfStmt;
 import budapest.pest.ast.stmt.LocalDefStmt;
 import budapest.pest.ast.stmt.LoopStmt;
@@ -16,6 +19,13 @@ import budapest.pest.ast.stmt.SkipStmt;
 import budapest.pest.ast.visitor.PestVisitor;
 
 public class StmtModifiedVarGetter extends PestVisitor<Set<String>, Void> {
+	
+	Program program;
+	
+	public StmtModifiedVarGetter(Program p)
+	{
+		program = p;
+	}
 	
 	public Set<String> visit(Procedure n, Void arg) {
 		return n.stmt.accept(this, arg);
@@ -68,5 +78,10 @@ public class StmtModifiedVarGetter extends PestVisitor<Set<String>, Void> {
 	public Set<String> visit(SkipStmt n, Void arg) {
 		return new HashSet<String>();
 	}
-	
+
+	public Set<String> visit(CallStmt n, Void arg) {
+		ProcVarBinder binder = new ProcVarBinder(n, program);
+		return binder.touchedVars;
+	}
+
 }
