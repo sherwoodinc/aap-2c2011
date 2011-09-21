@@ -1,0 +1,45 @@
+increment(a)
+:? a >= 0
+:! a = a@pre + 1
+:* a
+{
+	a <- a + 1
+}
+
+duplicate(a,b)
+:? a >= 0
+:! b = a@pre
+:* b
+{
+	b <- 0 
+	while b < a
+	:?! 0 <= b && b <= a
+	:# a - b
+	do
+	{
+		increment(b)
+	}
+}
+
+swap(a,b)
+:? true
+:! b = a@pre && a = b@pre
+:* a,b
+{
+    local temp <- 0
+    duplicate(a,temp)
+    a <- b
+    b <- temp
+}
+
+copysum(a,b,c)
+:? a >= 0 && b >= 0
+:! c = a@pre + b@pre
+:* c
+{
+	local i <- 0
+	local j <- 0
+	duplicate(a,i)
+	duplicate(b,j)
+	c <- i + j
+}
