@@ -198,7 +198,8 @@ public final class PestToCVC3Translator extends PestVisitor<String, PestVarConte
 		Pred pre = binder.callee.pre.accept(new PredParamReplacer(), binder.bindings).accept(new PredVarReplacer(), context);
 
 		result += "%%% Verify PRE\n";
-		result += " QUERY ( " + pre.accept(new PredPrinter(), null) + " );\n";
+		//result += " QUERY ( " + pre.accept(new PredPrinter(), null) + " );\n";
+		result += " QUERY ( " + pre.accept(new PredToCVC3Translator(context), null) + " );\n";
 		result += "%%% Here the Procedure 'runs'...\n";
 
 		// Overwrite context with changed vars
