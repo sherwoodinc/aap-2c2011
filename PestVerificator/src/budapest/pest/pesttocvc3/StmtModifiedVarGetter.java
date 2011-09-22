@@ -3,7 +3,6 @@ package budapest.pest.pesttocvc3;
 import java.util.HashSet;
 import java.util.Set;
 
-import budapest.pest.ast.params.FormalParam;
 import budapest.pest.ast.proc.Procedure;
 import budapest.pest.ast.proc.Program;
 import budapest.pest.ast.stmt.AssertStmt;
@@ -18,6 +17,11 @@ import budapest.pest.ast.stmt.SeqStmt;
 import budapest.pest.ast.stmt.SkipStmt;
 import budapest.pest.ast.visitor.PestVisitor;
 
+/**
+ * StmtModifiedVarGetter visita un Statement y obtiene todas las variables que serían asignadas
+ * durante la ejecución.
+ * Mantiene una referencia al Program para poder resolver las variables tocadas por un Call
+ */
 public class StmtModifiedVarGetter extends PestVisitor<Set<String>, Void> {
 	
 	Program program;

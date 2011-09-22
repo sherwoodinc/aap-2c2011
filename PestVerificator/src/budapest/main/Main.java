@@ -16,6 +16,7 @@ import budapest.pest.parser.ParseException;
 import budapest.pest.parser.PestParser;
 import budapest.pest.pesttocvc3.PestToCVC3Exception;
 import budapest.pest.pesttocvc3.PestToCVC3Translator;
+import budapest.pest.pesttocvc3.PestVarContext;
 
 public class Main {
 
@@ -24,55 +25,58 @@ public class Main {
 	//Options... (In the future should be taken from args. Not now since this is better for debugging)
 	private static Boolean isDebugging = true;
 	private static Boolean executeCVC3 = true;
-	private static OutputType outputType = OutputType.CONSOLE;
-	private static String inputFile = "tests/testCall.pest";
+	private static OutputType outputType = OutputType.FILE;
+	//private static String inputFile = "tests/testCall.pest";
 			
 	public static void main(String[] args) {
-				
-		try
+		for (String inputFile : args)
 		{
-			Program p = GetProgramFromFile(inputFile);
-			String cvc3String = GetCVC3StringFromProgram(p);
-						
-			if(!executeCVC3) 
+			try
 			{
-				if(outputType == OutputType.CONSOLE)
-					System.out.println(cvc3String);
-				else
-					PrintStringToNewFile(cvc3String, GetFileNameWithExtension(inputFile, "cvc3"));
-			}
-			else 
-			{
-				//Saving the cvc3 query in a file...
-				String cvc3File = GetFileNameWithExtension(inputFile, "cvc3");
-				PrintStringToNewFile(cvc3String, cvc3File);
-				
-				//Executing the query from that file...
-				String result = ExecuteCVC3WithQuery(cvc3File);
-				result = cvc3String + "\nCVC3 Result >> " + result;
-				
-				if(outputType == OutputType.CONSOLE) {
-					System.out.println(result);
-					
-					//If the user wanted the console output, delete the cvc3 temporal file...
-					File tempFile = new File(cvc3File);
-					if(tempFile.exists())
-						tempFile.delete();
+				PestVarContext.reset();
+				Program p = GetProgramFromFile(inputFile);
+				String cvc3String = GetCVC3StringFromProgram(p);
+							
+				if(!executeCVC3) 
+				{
+					if(outputType == OutputType.CONSOLE)
+						System.out.println(cvc3String);
+					else
+						PrintStringToNewFile(cvc3String, GetFileNameWithExtension(inputFile, "cvc3"));
 				}
-				else
-					PrintStringToNewFile(result, GetFileNameWithExtension(inputFile, "cvc3result"));
+				else 
+				{
+					//Saving the cvc3 query in a file...
+					String cvc3File = GetFileNameWithExtension(inputFile, "cvc3");
+					PrintStringToNewFile(cvc3String, cvc3File);
+					
+					//Executing the query from that file...
+					String result = ExecuteCVC3WithQuery(cvc3File);
+					result = cvc3String + "\nCVC3 Result >> " + result;
+					
+					if(outputType == OutputType.CONSOLE) {
+						System.out.println(result);
+						
+						//If the user wanted the console output, delete the cvc3 temporal file...
+						File tempFile = new File(cvc3File);
+						if(tempFile.exists())
+							tempFile.delete();
+					}
+					else
+						PrintStringToNewFile(result, GetFileNameWithExtension(inputFile, "cvc3result"));
+				}
 			}
-		}
-		catch(PestToCVC3Exception e)
-		{
-			System.out.println(e.getMessage());
+			catch(PestToCVC3Exception e)
+			{
+				System.out.println(e.getMessage());
+			}
 		}
 	}
 	
 	private static String ExecuteCVC3WithQuery(String query) throws PestToCVC3Exception {
 		try
 		{
-			String[] args = {"cvc3/cvc3.exe", query};
+			String[] args = {"cvc3", query};
 			Process p = Runtime.getRuntime().exec(args);
 		    int exitValue = p.waitFor();
 		    String result = "";
