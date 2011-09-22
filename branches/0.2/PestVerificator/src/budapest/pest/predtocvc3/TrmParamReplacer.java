@@ -11,6 +11,10 @@ import budapest.pest.ast.pred.trm.Trm;
 import budapest.pest.ast.pred.trm.VarTrm;
 import budapest.pest.ast.visitor.TrmVisitor;
 
+/**
+ * Este visitor de Terms reemplaza nombres de variables por sus Terms correspondientes.
+ * El Map parámetro es el binding de los nombres de variables a Terms.
+ */
 public class TrmParamReplacer extends TrmVisitor<Trm, Map<String, Trm>> {
 
 	// concrete trms
