@@ -9,8 +9,8 @@ Importar el proyecto a un workspace. Correrlo.
 El programa procesa cada argumento como un archivo fuente pest a procesar.
 
 La carpeta de trabajo tiene la subcarpeta tests/ con los tests dados por la 
-cátedra, sus correcciones donde fuera pertinente, y otros tests que nos pareció
-interesante incluir.
+cátedra, sus versiones corregidas  donde fuera pertinente, y otros tests que
+nos pareció interesante incluir.
 
 De esta manera, editando los argumentos de ejecución se puede correr los tests 
 que se quiera ver.
