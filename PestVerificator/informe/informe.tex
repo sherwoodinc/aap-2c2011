@@ -2,8 +2,8 @@
 \usepackage[latin1]{inputenc}
 
 \author{Federico Bugni, Federico Paulovsky, Gervasio Perez}
-\title{An·lisis Autom·tico de Programas}
-\title{Trabajo pr·ctico N∫ 1: VerificaciÛn de Programas}
+\title{An√°lisis Autom√°tico de Programas}
+\title{Trabajo pr√°ctico N¬∫ 1: Verificaci√≥n de Programas}
 
 \begin{document}
 
@@ -11,40 +11,40 @@
 
 \section{Ejercicio 1}
 
-TODO.
+Este ejercicio nos sirvi√≥ mucho para empezar a utilizar CVC3. La resoluci√≥n se encuentra en el archivo \textit{Ejercicio1} . Utilizamos fuertemente los \textit{FOR ALL} y la definici√≥n de variables; que esto ultimo lo vamos a utilizar seguido mas adelante.  
 
 \section{Ejercicios 2 y 3}
 
-En esta secciÛn trataremos los aspectos del TP relacionados a la implementaciÛn del verificador Pest.
+En esta secci√≥n trataremos los aspectos del TP relacionados a la implementaci√≥n del verificador Pest.
 
-\subsection{Consideraciones generales de diseÒo}
+\subsection{Consideraciones generales de dise√±o}
 
-En nuestro TP utilizamos extensivamente el patrÛn \textit{Visitor} para las recorridas de los ·rboles sint·cticos de programas Pest, de predicados lÛgicos y de tÈrminos.
+En nuestro TP utilizamos extensivamente el patr√≥n \textit{Visitor} para las recorridas de los √°rboles sint√°cticos de programas Pest, de predicados l√≥gicos y de t√©rminos.
 
 \subsection{Desarrollo}
 
-\subsubsection{Primer enfoque de verificaciÛn}
+\subsubsection{Primer enfoque de verificaci√≥n}
 
-Inicialmente optamos por implementar el verificador armando una fÛrmula lÛgica con cuantificadores, lo cual probÛ ser arduo especialmente con respecto al \textit{debugging}.
-Luego de la clase pr·ctica del MiÈrcoles 14/9 decidimos cambiar el enfoque completamente, convirtiendo el output CVC3 en una secuencia de declaraciones de variables, y comandos ASSERT y comandos QUERY para verificar condiciones. El cambio no resultÛ problem·tico porque reciÈn est·bamos llegando a implementar el if y buena parte del cÛdigo de los Visitors pudo ser reutilizada. De todas maneras
+Inicialmente optamos por implementar el verificador armando una f√≥rmula l√≥gica con cuantificadores, lo cual prob√≥ ser arduo especialmente con respecto al \textit{debugging}.
+Luego de la clase pr√°ctica del Mi√©rcoles 14/9 decidimos cambiar el enfoque completamente, convirtiendo el output CVC3 en una secuencia de declaraciones de variables, y comandos ASSERT y comandos QUERY para verificar condiciones. El cambio no result√≥ problem√°tico porque reci√©n est√°bamos llegando a implementar el if y buena parte del c√≥digo de los Visitors pudo ser reutilizada.
 
-\subsubsection{VersiÛn final}
+\subsubsection{Versi√≥n final}
 
 Para el nuevo enfoque adoptamos el concepto de \textit{contexto} mencionado en clase. 
 
 \subsection{Clases desarrolladas}
 
-Para la realizaciÛn del TP desarrollamos los paquetes \textbf{budapest.pest.pesttocvc3} y \textbf{budapest.pest.predtocvc3} que contienen el cÛdigo de traducciÛn. …stos contienen las siguientes clases:
+Para la realizaci√≥n del TP desarrollamos los paquetes \textbf{budapest.pest.pesttocvc3} y \textbf{budapest.pest.predtocvc3} que contienen el c√≥digo de traducci√≥n. √âstos contienen las siguientes clases:
 \begin{itemize}
-\item PestToCVC3Translator: ImplementaciÛn de Visitor que recorre un programa Pest y lo traduce, devolviendo un String con los comandos CVC3 que lo verifican.
-\item PestVarContext: RepresentaciÛn de un contexto de variables Pest versionadas. 
+\item PestToCVC3Translator: Implementaci√≥n de Visitor que recorre un programa Pest y lo traduce, devolviendo un String con los comandos CVC3 que lo verifican.
+\item PestVarContext: Representaci√≥n de un contexto de variables Pest versionadas. 
 \item PredVarReplacer y TrmVarReplacer: Visitors que realizan el reemplazo de variables en Predicados y en Terms respectivamente. Hacen uso de un PestVarContext de donde toman el nombre que debe usarse para cada variable en el reemplazo.
-\item PredParamReplacer y TrmParamReplacer: Similares a los anteriores, pero hacen un reemplazo de un nombre de variable por un Term cualquiera. Necesarios para implementar el reemplazo de variables en una llamada a funciÛn.
-\item PestVarBinder: Auxiliar para calcular el mapeo de nombres de par·metro de un procedimiento a las expresiones que se usaron para invocarlo.
+\item PredParamReplacer y TrmParamReplacer: Similares a los anteriores, pero hacen un reemplazo de un nombre de variable por un Term cualquiera. Necesarios para implementar el reemplazo de variables en una llamada a funci√≥n.
+\item PestVarBinder: Auxiliar para calcular el mapeo de nombres de par√°metro de un procedimiento a las expresiones que se usaron para invocarlo.
 \end{itemize}
 
 \subsubsection{PestToCVC3Translator}
 
-Este Visitor hace uso de contextos de variables para resolver el nombre que debe tener cada "instancia" de una variable al momento de usarla en una fÛrmula CVC.
+Este Visitor hace uso de contextos de variables para resolver el nombre que debe tener cada "instancia" de una variable al momento de usarla en una f√≥rmula CVC.
 
 \end{document}
