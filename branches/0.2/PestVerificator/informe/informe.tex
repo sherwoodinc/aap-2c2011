@@ -1,9 +1,8 @@
-\documentclass{article}
-\usepackage[latin1]{inputenc}
+\documentclass[a4paper]{article}
+\usepackage[utf8]{inputenc}
 
 \author{Federico Bugni, Federico Paulovsky, Gervasio Perez}
-\title{Análisis Automático de Programas}
-\title{Trabajo práctico Nº 1: Verificación de Programas}
+\title{AAP - Trabajo práctico Nº 1: Verificación de Programas}
 
 \begin{document}
 
@@ -11,40 +10,108 @@
 
 \section{Ejercicio 1}
 
-Este ejercicio nos sirvió mucho para empezar a utilizar CVC3. La resolución se encuentra en el archivo \textit{Ejercicio1} . Utilizamos fuertemente los \textit{FOR ALL} y la definición de variables; que esto ultimo lo vamos a utilizar seguido mas adelante.  
+Este ejercicio nos sirvió mucho para empezar a utilizar CVC3. La resolución se encuentra en el archivo \textit{Ejercicio1}, y la transcribimos a continuación. Utilizamos fuertemente los \textit{FOR ALL} y la definición de variables; que esto ultimo lo vamos a utilizar seguido mas adelante.  
+
+\begin{verbatim}
+% Ejercicio 1
+% a
+QUERY FORALL (x, y, z: INT): x <= y AND y <= z => x <= z ;
+
+% b
+QUERY FORALL (a, b: INT): a < b XOR a = b XOR a > b ;
+
+% c
+QUERY FORALL (a, b: INT): a <= b AND b <= a+1 => b = a XOR b = a + 1 ;
+\end{verbatim}
 
 \section{Ejercicios 2 y 3}
 
 En esta sección trataremos los aspectos del TP relacionados a la implementación del verificador Pest.
 
-\subsection{Consideraciones generales de diseño}
+\subsection{Consideraciones generales de diseño y algunas decisiones tomadas}
 
-En nuestro TP utilizamos extensivamente el patrón \textit{Visitor} para las recorridas de los árboles sintácticos de programas Pest, de predicados lógicos y de términos.
+En nuestro TP utilizamos extensivamente el patrón \textit{Visitor} para las recorridas de los árboles sintácticos de programas Pest, de predicados lógicos y de términos. Nuestra implementación soporta una cantidad arbitraria de construcciones Pest anidadas.
+
+Para la implementación de las llamadas a procedimiento decidimos asumir que las llamadas a procedimiento reciben parámetros correctos, es decir, si el procedimiento $suma(a,b)$ modifica a la variable $a$, invocaciones del tipo $suma(15,j)$ no están contempladas en nuestro programa (que se indefine), dado que 15 es un literal y no una variable válida modificable.
 
 \subsection{Desarrollo}
 
 \subsubsection{Primer enfoque de verificación}
 
 Inicialmente optamos por implementar el verificador armando una fórmula lógica con cuantificadores, lo cual probó ser arduo especialmente con respecto al \textit{debugging}.
-Luego de la clase práctica del Miércoles 14/9 decidimos cambiar el enfoque completamente, convirtiendo el output CVC3 en una secuencia de declaraciones de variables, y comandos ASSERT y comandos QUERY para verificar condiciones. El cambio no resultó problemático porque recién estábamos llegando a implementar el if y buena parte del código de los Visitors pudo ser reutilizada.
+
+Luego de la clase práctica del Miércoles 14/9 decidimos cambiar el enfoque completamente, utilizando la técnica de SSA (\textit{Static Single Assignment}). El cambio no resultó problemático porque recién estábamos llegando a implementar el if y buena parte del código de los Visitors pudo ser reutilizada.
 
 \subsubsection{Versión final}
 
-Para el nuevo enfoque adoptamos el concepto de \textit{contexto} mencionado en clase. 
+El traductor definitivo convierte el output CVC3 en una secuencia de declaraciones de variables, y comandos ASSERT y comandos QUERY para verificar condiciones. Para ello necesita usar la técnica SSA para asegurar que cada asignación va a generar una nueva versión de un variable $x$ siendo asignada.
+
+Para el nuevo enfoque adoptamos el concepto de \textit{contexto} mencionado en clase, que nos permite mantener un mapeo de nombres de variable a versiones para su uso durante la traducción.
 
 \subsection{Clases desarrolladas}
 
 Para la realización del TP desarrollamos los paquetes \textbf{budapest.pest.pesttocvc3} y \textbf{budapest.pest.predtocvc3} que contienen el código de traducción. Éstos contienen las siguientes clases:
 \begin{itemize}
-\item PestToCVC3Translator: Implementación de Visitor que recorre un programa Pest y lo traduce, devolviendo un String con los comandos CVC3 que lo verifican.
-\item PestVarContext: Representación de un contexto de variables Pest versionadas. 
-\item PredVarReplacer y TrmVarReplacer: Visitors que realizan el reemplazo de variables en Predicados y en Terms respectivamente. Hacen uso de un PestVarContext de donde toman el nombre que debe usarse para cada variable en el reemplazo.
-\item PredParamReplacer y TrmParamReplacer: Similares a los anteriores, pero hacen un reemplazo de un nombre de variable por un Term cualquiera. Necesarios para implementar el reemplazo de variables en una llamada a función.
-\item PestVarBinder: Auxiliar para calcular el mapeo de nombres de parámetro de un procedimiento a las expresiones que se usaron para invocarlo.
+\item \textbf{PestToCVC3Translator}: Implementación de Visitor que recorre un programa Pest y lo traduce, devolviendo un String con los comandos CVC3 que lo verifican.
+\item \textbf{PestVarContext}: Representación de un contexto de variables Pest versionadas. 
+\item \textbf{PredVarReplacer} y \textbf{TrmVarReplacer}: Visitors que realizan el reemplazo de variables en Predicados y en Terms respectivamente. Hacen uso de un PestVarContext de donde toman el nombre que debe usarse para cada variable en el reemplazo.
+\item \textbf{PredParamReplacer} y \textbf{TrmParamReplacer}: Similares a los anteriores, pero hacen un reemplazo de un nombre de variable por un Term cualquiera. Necesarios para implementar el reemplazo de variables en una llamada a procedimiento.
+\item \textbf{PestVarBinder}: Auxiliar para calcular el mapeo de nombres de parámetro de un procedimiento a las expresiones que se usaron para invocarlo.
 \end{itemize}
 
 \subsubsection{PestToCVC3Translator}
 
-Este Visitor hace uso de contextos de variables para resolver el nombre que debe tener cada "instancia" de una variable al momento de usarla en una fórmula CVC.
+Este Visitor hace uso de contextos de variables para resolver el nombre que debe tener cada aparición de una variable al momento de usarla en una fórmula CVC. Además se ocupa de separar y unir contextos cuando el flujo del programa lo requiere:
+\begin{itemize}
+\item \textbf{A continuación de una construcción $if$}. Es necesario ejecutar cada rama en un contexto separado, y luego "unir" ambos contextos al contexto principal: dando un nombre nuevo a cada una de las variables que fue modificada en alguna de las dos ramas, y especificando la relación entre la condición del $if$ y su valor final con comandos $ASSERT$.
+\item \textbf{A continuación de una construcción $while$}. Es necesario, por un lado, demostrar las propiedades de una iteración $k$ del loop en un contexto separado; y luego actualizar el contexto original con las variables que fueron modificadas en el contexto del loop.
+\item \textbf{A continuación de una llamada a procedimiento}. Es necesario verificar el pre y asegurar el post del procedimiento llamado, instanciándolos con las parámetros pasados. Tambien es necesario actualizar el contexto. Para un ejemplo, ver la sección sobre el \textbf{PestVarBinder}.
+\end{itemize}
+
+\subsubsection{PestVarContext}
+
+Esta clase es un $Map$ extendido para guardar una referencia a un contexto padre, y además contiene una instancia de clase de un $Map$ con la última versión usada de una variable. Esto es necesario para que contextos independientes no utilicen el mismo número de versión para nombrar a una variable.
+
+\subsubsection{PestVarBinder}
+
+Esta clase encapsula el algoritmo que calcula, en base a una llamada a procedimiento ($CallStmt$) y al $Program$ que la contiene:
+\begin{itemize}
+\item el $Procedure$ $p$ objetivo de la llamada, buscándolo en el $Program$ provisto;
+\item el $Map$ que traduce nombres de parámetros a las expresiones usadas como parámetros de la llamada a procedimiento;
+\item el conjunto de nombres de variable que fueron pasadas como parámetro y van a ser "tocadas" por el procedimiento.
+\end{itemize}
+
+Por ejemplo, para el procedimiento
+\begin{verbatim}
+sumaSiMenor(a,b)
+:? a < b
+:! a = a@pre + b@pre
+:* a
+{
+  a <- a + b
+}
+\end{verbatim}
+y el fragmento de código de invocación
+\begin{verbatim}
+sumaSiMenor(j, k + 1)
+\end{verbatim}
+se generaría un PestVarBinder con el el $Map$ $\{a \rightarrow j$, $b \rightarrow k + 1\}$, y con el conjunto de variables tocadas $\{ j \}$.
+
+Desde ya estos datos son muy útiles al \textbf{PestToCVC3Translator} y a los Visitors \textbf{PredParamReplacer} y \textbf{TrmParamReplacer} a la hora de traducir pres y posts de procedimientos, y para actualizar el contexto que realiza una llamada a procedimiento con versiones nuevas de las variables tocadas.
+
+Para este ejemplo, el contexto pre-llamada $C_{pre} $ sería $ [ j \rightarrow j_i, k \rightarrow k_j ]$ , y el contexto $C_{post}$ sería $[ j -> j_{i'}, k -> k_j ]$. Las pre y post se verificarían así:
+\begin{verbatim}
+% PRE:
+QUERY ( j_i < k_j + 1 );
+% POST:
+j_i': INT;
+ASSERT ( j_i' = j_i + k_j + 1);
+\end{verbatim}
+
+\subsection{Conclusiones acerca de la implementación}
+
+El segundo enfoque con SSA resultó muy intuitivo a la hora de escribir la verificación CVC3, y tuvimos mucho más claro cómo avanzar en la implementación. Fue interesante desarrollar las llamadas a procedimiento (aunque menos complejas que desarrollar el $while$).
+
+En conjunto, resultó una experiencia muy interesante.
 
 \end{document}
