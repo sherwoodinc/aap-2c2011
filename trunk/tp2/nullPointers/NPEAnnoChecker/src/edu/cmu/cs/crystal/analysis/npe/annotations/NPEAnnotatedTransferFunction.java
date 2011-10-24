@@ -10,6 +10,7 @@ import edu.cmu.cs.crystal.simple.AbstractingTransferFunction;
 import edu.cmu.cs.crystal.simple.TupleLatticeElement;
 import edu.cmu.cs.crystal.simple.TupleLatticeOperations;
 import edu.cmu.cs.crystal.tac.model.ArrayInitInstruction;
+import edu.cmu.cs.crystal.tac.model.ConstructorCallInstruction;
 import edu.cmu.cs.crystal.tac.model.CopyInstruction;
 import edu.cmu.cs.crystal.tac.model.LoadLiteralInstruction;
 import edu.cmu.cs.crystal.tac.model.MethodCallInstruction;
@@ -92,23 +93,32 @@ public class NPEAnnotatedTransferFunction extends AbstractingTransferFunction<Tu
 			MethodCallInstruction instr,
 			TupleLatticeElement<Variable, NullLatticeElement> value) {
 		AnnotationSummary summary = annoDB.getSummaryForMethod(instr.resolveBinding());
+        
+		System.out.println("method: "+instr.toString());
 		
-		for (int ndx = 0; ndx < instr.getArgOperands().size(); ndx++) {
-			Variable paramVar = instr.getArgOperands().get(ndx);
-			
-			if (summary.getParameter(ndx, AnnotatedNPEAnalysis.NON_NULL_ANNO) != null) //is this parameter annotated with @Nonnull?
-				value.put(paramVar, NullLatticeElement.NOT_NULL);
-		}
-		
-		if (summary.getReturn(AnnotatedNPEAnalysis.NON_NULL_ANNO) != null) 
-			value.put(instr.getTarget(), NullLatticeElement.NOT_NULL);
-		
-		//clearly, the receiver is not null if this method call does actually occur ;)
-		value.put(instr.getReceiverOperand(), NullLatticeElement.NOT_NULL);
+        for (int ndx = 0; ndx < instr.getArgOperands().size(); ndx++) {
+                Variable paramVar = instr.getArgOperands().get(ndx);
+                
+                System.out.println("var: "+paramVar.toString());
+                if (summary.getParameter(ndx, AnnotatedNPEAnalysis.NON_NULL_ANNO) != null) { //is this parameter annotated with @Nonnull?
+                	value.put(paramVar, NullLatticeElement.NOT_NULL);
+                } else {
+                    value.put(paramVar, NullLatticeElement.MAYBE_NULL);
+                }
+        }
+        
+        if (summary.getReturn(AnnotatedNPEAnalysis.NON_NULL_ANNO) != null) { 
+            value.put(instr.getTarget(), NullLatticeElement.NOT_NULL); 
+        } else {
+        	value.put(instr.getTarget(), NullLatticeElement.MAYBE_NULL); 
+        }
+        
+        //clearly, the receiver is not null if this method call does actually occur ;)
+        value.put(instr.getReceiverOperand(), NullLatticeElement.NULL);
 
-		return value;
+        return value;
 	}
-
+		
 	@Override
 	public TupleLatticeElement<Variable, NullLatticeElement> transfer(
 			NewArrayInstruction instr,
