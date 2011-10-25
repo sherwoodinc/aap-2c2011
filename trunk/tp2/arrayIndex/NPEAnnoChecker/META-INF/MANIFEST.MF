@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: NPEAnnoChecker Plug-in
-Bundle-SymbolicName: NPEAnnoChecker;singleton:=true
+Bundle-SymbolicName: ArrayBoundsChecker;singleton:=true
 Bundle-Version: 1.0.0
 Bundle-RequiredExecutionEnvironment: J2SE-1.5
 Require-Bundle: edu.cmu.cs.crystal;bundle-version="3.4.1",
