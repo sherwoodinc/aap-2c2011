@@ -28,7 +28,7 @@ public class NPEAnnotatedTransferFunction extends AbstractingTransferFunction<Tu
 	
 	public NPEAnnotatedTransferFunction(AnnotationDatabase annoDB) {
 		this.annoDB = annoDB;
-	}
+	}	
 
 	/**
 	 * The operations will create a default lattice which will map all variables to maybe null (since that was our default).
@@ -38,16 +38,13 @@ public class NPEAnnotatedTransferFunction extends AbstractingTransferFunction<Tu
 	public TupleLatticeElement<Variable, ArrayBoundsLatticeElement> createEntryValue(
 			MethodDeclaration method) {
 		TupleLatticeElement<Variable, ArrayBoundsLatticeElement> def = ops.getDefault();
-//		def.put(getAnalysisContext().getThisVariable(), ArrayBoundsLatticeElement.NOT_NULL);
+		def.put(getAnalysisContext().getThisVariable(), ArrayBoundsLatticeElement.top());
 		
 		AnnotationSummary summary = annoDB.getSummaryForMethod(method.resolveBinding());
 		
 		for (int ndx = 0; ndx < method.parameters().size(); ndx++) {
 			SingleVariableDeclaration decl = (SingleVariableDeclaration) method.parameters().get(ndx);
 			Variable paramVar = getAnalysisContext().getSourceVariable(decl.resolveBinding());
-			
-//			if (summary.getParameter(ndx, AnnotatedNPEAnalysis.NON_NULL_ANNO) != null) //is this parameter annotated with @Nonnull?
-//				def.put(paramVar, ArrayBoundsLatticeElement.NOT_NULL);
 		}
 		
 		return def;
@@ -64,7 +61,10 @@ public class NPEAnnotatedTransferFunction extends AbstractingTransferFunction<Tu
 	public TupleLatticeElement<Variable, ArrayBoundsLatticeElement> transfer(
 			ArrayInitInstruction instr,
 			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> value) {
-		//value.put(instr.getTarget(), ArrayBoundsLatticeElement.NOT_NULL);
+		if (instr.getInitOperands().size() > 0)
+			value.put(instr.getTarget(), new ArrayBoundsLatticeElement(0, instr.getInitOperands().size()-1) );
+		else
+			value.put(instr.getTarget(), ArrayBoundsLatticeElement.bottom() );
 		return value;
 	}
 
@@ -80,32 +80,13 @@ public class NPEAnnotatedTransferFunction extends AbstractingTransferFunction<Tu
 	public TupleLatticeElement<Variable, ArrayBoundsLatticeElement> transfer(
 			LoadLiteralInstruction instr,
 			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> value) {
-//		if (instr.isNull())
-//			value.put(instr.getTarget(), ArrayBoundsLatticeElement.NULL);
-//		else
-//			value.put(instr.getTarget(), ArrayBoundsLatticeElement.NOT_NULL);
-		return value;
-	}
-
-	@Override
-	public TupleLatticeElement<Variable, ArrayBoundsLatticeElement> transfer(
-			MethodCallInstruction instr,
-			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> value) {
-		AnnotationSummary summary = annoDB.getSummaryForMethod(instr.resolveBinding());
-		
-		for (int ndx = 0; ndx < instr.getArgOperands().size(); ndx++) {
-			Variable paramVar = instr.getArgOperands().get(ndx);
-			
-//			if (summary.getParameter(ndx, AnnotatedNPEAnalysis.NON_NULL_ANNO) != null) //is this parameter annotated with @Nonnull?
-//				value.put(paramVar, ArrayBoundsLatticeElement.NOT_NULL);
+		 
+		if (instr.isNumber() && instr.getLiteral() instanceof java.lang.String) {
+			int index = Integer.parseInt((String)instr.getLiteral());
+			value.put(instr.getTarget(), new ArrayBoundsLatticeElement(index,index));
 		}
-		
-//		if (summary.getReturn(AnnotatedNPEAnalysis.NON_NULL_ANNO) != null) 
-//			value.put(instr.getTarget(), ArrayBoundsLatticeElement.NOT_NULL);
-		
-		//clearly, the receiver is not null if this method call does actually occur ;)
-//		value.put(instr.getReceiverOperand(), ArrayBoundsLatticeElement.NOT_NULL);
-
+		else
+			value.put(instr.getTarget(), ArrayBoundsLatticeElement.top());
 		return value;
 	}
 
@@ -113,15 +94,12 @@ public class NPEAnnotatedTransferFunction extends AbstractingTransferFunction<Tu
 	public TupleLatticeElement<Variable, ArrayBoundsLatticeElement> transfer(
 			NewArrayInstruction instr,
 			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> value) {
-		//value.put(instr.getTarget(), ArrayBoundsLatticeElement.NOT_NULL);
-		return value;
-	}
-
-	@Override
-	public TupleLatticeElement<Variable, ArrayBoundsLatticeElement> transfer(
-			NewObjectInstruction instr,
-			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> value) {
-		//value.put(instr.getTarget(), ArrayBoundsLatticeElement.NOT_NULL);
+		if (instr.isInitialized())
+		{
+			
+			//value.put(instr.getTarget(), ArrayBoundsLatticeElement.NOT_NULL);
+		}
+		
 		return value;
 	}
 }
