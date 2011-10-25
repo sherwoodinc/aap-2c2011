@@ -88,7 +88,52 @@ public class ArrayBoundsLatticeElement {
 			
 		return ret;
 	}
-	
+
+	// Junta dos intervalos en uno que contenga a ambos
+	public ArrayBoundsLatticeElement add(ArrayBoundsLatticeElement other) {
+		if (isBottom())
+			return other.clone();
+		
+		if (other.isBottom())
+			return clone();
+		
+		ArrayBoundsLatticeElement ret = new ArrayBoundsLatticeElement(Math.min(min, other.min), Math.max(max,other.max));
+		ret.lmin = lmin == LimitValue.NEG_INFINITY || other.lmin == LimitValue.NEG_INFINITY? LimitValue.NEG_INFINITY : LimitValue.SOME_VALUE;
+		ret.lmax = lmax == LimitValue.POS_INFINITY || other.lmax == LimitValue.POS_INFINITY? LimitValue.POS_INFINITY : other.lmax;
+			
+		return ret;
+	}
+
+	// Junta dos intervalos en uno que contenga a ambos
+	public ArrayBoundsLatticeElement substract(ArrayBoundsLatticeElement other) {
+		if (isBottom())
+			return other.clone();
+		
+		if (other.isBottom())
+			return clone();
+		
+		ArrayBoundsLatticeElement ret = new ArrayBoundsLatticeElement(Math.min(min, other.min), Math.max(max,other.max));
+		ret.lmin = lmin == LimitValue.NEG_INFINITY || other.lmin == LimitValue.NEG_INFINITY? LimitValue.NEG_INFINITY : LimitValue.SOME_VALUE;
+		ret.lmax = lmax == LimitValue.POS_INFINITY || other.lmax == LimitValue.POS_INFINITY? LimitValue.POS_INFINITY : other.lmax;
+			
+		return ret;
+	}
+
+	// Junta dos intervalos en uno que contenga a ambos
+	public ArrayBoundsLatticeElement multiply(ArrayBoundsLatticeElement other) {
+		if (isBottom())
+			return other.clone();
+		
+		if (other.isBottom())
+			return clone();
+		
+		ArrayBoundsLatticeElement ret = new ArrayBoundsLatticeElement(Math.min(min, other.min), Math.max(max,other.max));
+		ret.lmin = lmin == LimitValue.NEG_INFINITY || other.lmin == LimitValue.NEG_INFINITY? LimitValue.NEG_INFINITY : LimitValue.SOME_VALUE;
+		ret.lmax = lmax == LimitValue.POS_INFINITY || other.lmax == LimitValue.POS_INFINITY? LimitValue.POS_INFINITY : other.lmax;
+			
+		return ret;
+	}
+
 	public boolean equals(ArrayBoundsLatticeElement other) {
 		return this.contains(other) && other.contains(this);	
 	}
