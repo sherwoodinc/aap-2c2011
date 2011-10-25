@@ -49,17 +49,17 @@ import edu.cmu.cs.crystal.util.Utilities;
 public class AnnotatedNPEAnalysis extends AbstractCrystalMethodAnalysis {
 	public static final String NON_NULL_ANNO = "edu.cmu.cs.crystal.annos.NonNull";
 	
-	TACFlowAnalysis<TupleLatticeElement<Variable, NullLatticeElement>> flowAnalysis;
+	TACFlowAnalysis<TupleLatticeElement<Variable, ArrayBoundsLatticeElement>> flowAnalysis;
 
 	@Override
 	public String getName() {
-		return "Annotated NPE Flow";
+		return "Array Bounds Checker";
 	}
 
 	@Override
 	public void analyzeMethod(MethodDeclaration d) {
 		NPEAnnotatedTransferFunction tf = new NPEAnnotatedTransferFunction(getInput().getAnnoDB());
-		flowAnalysis = new TACFlowAnalysis<TupleLatticeElement<Variable, NullLatticeElement>>(tf, getInput());
+		flowAnalysis = new TACFlowAnalysis<TupleLatticeElement<Variable, ArrayBoundsLatticeElement>>(tf, getInput());
 		
 		d.accept(new NPEFlowVisitor());
 	}
@@ -70,26 +70,22 @@ public class AnnotatedNPEAnalysis extends AbstractCrystalMethodAnalysis {
 	 */
 	public class NPEFlowVisitor extends ASTVisitor {
 
-		private void checkVariable(TupleLatticeElement<Variable, NullLatticeElement> tuple, Expression nodeToCheck) {
+		private void checkVariable(TupleLatticeElement<Variable, ArrayBoundsLatticeElement> tuple, Expression nodeToCheck) {
 			Variable varToCheck = flowAnalysis.getVariable(nodeToCheck);
-			NullLatticeElement element = tuple.get(varToCheck);
+			ArrayBoundsLatticeElement element = tuple.get(varToCheck);
 			
-			if (element == NullLatticeElement.MAYBE_NULL)
-				getReporter().reportUserProblem("The expression " + nodeToCheck + " may be null.", nodeToCheck, getName(), SEVERITY.WARNING);		
-			else if (element == NullLatticeElement.NULL)
-				getReporter().reportUserProblem("The expression " + nodeToCheck + " is null.", nodeToCheck, getName(), SEVERITY.ERROR);		
 		}
 
 		@Override
 		public void endVisit(ArrayAccess node) {
-			TupleLatticeElement<Variable, NullLatticeElement> beforeTuple = flowAnalysis.getResultsBefore(node);
+			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> beforeTuple = flowAnalysis.getResultsBefore(node);
 			
 			checkVariable(beforeTuple, node.getArray());
 		}
 
 		@Override
 		public void endVisit(FieldAccess node) {
-			TupleLatticeElement<Variable, NullLatticeElement> beforeTuple = flowAnalysis.getResultsBefore(node);
+			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> beforeTuple = flowAnalysis.getResultsBefore(node);
 			
 			if (node.getExpression() != null)
 				checkVariable(beforeTuple, node.getExpression());
@@ -97,7 +93,7 @@ public class AnnotatedNPEAnalysis extends AbstractCrystalMethodAnalysis {
 		
 		@Override
 		public void endVisit(MethodInvocation node) {
-			TupleLatticeElement<Variable, NullLatticeElement> beforeTuple = flowAnalysis.getResultsBefore(node);
+			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> beforeTuple = flowAnalysis.getResultsBefore(node);
 			
 			if (node.getExpression() != null)
 				checkVariable(beforeTuple, node.getExpression());
@@ -116,7 +112,7 @@ public class AnnotatedNPEAnalysis extends AbstractCrystalMethodAnalysis {
 			//To check for this, see what the binding is.
 			if (node.resolveBinding() instanceof IVariableBinding) {
 				//now we know it's field access.
-				TupleLatticeElement<Variable, NullLatticeElement> beforeTuple = flowAnalysis.getResultsBefore(node);
+				TupleLatticeElement<Variable, ArrayBoundsLatticeElement> beforeTuple = flowAnalysis.getResultsBefore(node);
 				
 				checkVariable(beforeTuple, node.getQualifier());
 			}
