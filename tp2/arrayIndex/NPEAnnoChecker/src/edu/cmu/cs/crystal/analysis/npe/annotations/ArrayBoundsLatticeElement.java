@@ -78,61 +78,75 @@ public class ArrayBoundsLatticeElement {
 	
 	// Junta dos intervalos en uno que contenga a ambos
 	public ArrayBoundsLatticeElement merge(ArrayBoundsLatticeElement other) {
-		if (isBottom())
+		if (isBottom() || other.isTop())
 			return other.clone();
 		
-		if (other.isBottom())
+		if (other.isBottom() || isTop())
 			return clone();
-		
-		ArrayBoundsLatticeElement ret = new ArrayBoundsLatticeElement(Math.min(min, other.min), Math.max(max,other.max));
-		ret.lmin = lmin == LimitValue.NEG_INFINITY || other.lmin == LimitValue.NEG_INFINITY? LimitValue.NEG_INFINITY : LimitValue.SOME_VALUE;
-		ret.lmax = lmax == LimitValue.POS_INFINITY || other.lmax == LimitValue.POS_INFINITY? LimitValue.POS_INFINITY : other.lmax;
 			
-		return ret;
+		ArrayBoundsLatticeElement ret = new ArrayBoundsLatticeElement(Math.min(min, other.min), Math.max(max, other.max));
+		ret.lmin = lmin == LimitValue.NEG_INFINITY || other.lmin == LimitValue.NEG_INFINITY ? LimitValue.NEG_INFINITY : LimitValue.SOME_VALUE;
+		ret.lmax = lmax == LimitValue.POS_INFINITY || other.lmax == LimitValue.POS_INFINITY ? LimitValue.POS_INFINITY : LimitValue.SOME_VALUE;
+		
+		return ret;		
 	}
-
-	// Junta dos intervalos en uno que contenga a ambos
+	
+	// Suma dos intervalos
 	public ArrayBoundsLatticeElement add(ArrayBoundsLatticeElement other) {
-		if (isBottom())
+		if (isBottom() || other.isTop())
 			return other.clone();
 		
-		if (other.isBottom())
+		if (other.isBottom() || isTop())
 			return clone();
-		
-		ArrayBoundsLatticeElement ret = new ArrayBoundsLatticeElement(Math.min(min, other.min), Math.max(max,other.max));
-		ret.lmin = lmin == LimitValue.NEG_INFINITY || other.lmin == LimitValue.NEG_INFINITY? LimitValue.NEG_INFINITY : LimitValue.SOME_VALUE;
-		ret.lmax = lmax == LimitValue.POS_INFINITY || other.lmax == LimitValue.POS_INFINITY? LimitValue.POS_INFINITY : other.lmax;
+				
+		int minValue = min == Integer.MIN_VALUE || other.min == Integer.MIN_VALUE ? Integer.MIN_VALUE : min + other.min;
+		int maxValue = max == Integer.MAX_VALUE || other.max == Integer.MAX_VALUE ? Integer.MAX_VALUE : max + other.max;
 			
+		ArrayBoundsLatticeElement ret = new ArrayBoundsLatticeElement(minValue, maxValue);
+		ret.lmin = lmin == LimitValue.NEG_INFINITY || other.lmin == LimitValue.NEG_INFINITY ? LimitValue.NEG_INFINITY : LimitValue.SOME_VALUE;
+		ret.lmax = lmax == LimitValue.POS_INFINITY || other.lmax == LimitValue.POS_INFINITY ? LimitValue.POS_INFINITY : LimitValue.SOME_VALUE;
+		
 		return ret;
 	}
 
-	// Junta dos intervalos en uno que contenga a ambos
+	// Resta dos intervalos
 	public ArrayBoundsLatticeElement substract(ArrayBoundsLatticeElement other) {
-		if (isBottom())
-			return other.clone();
-		
-		if (other.isBottom())
+		if (isBottom() || isTop() || other.isBottom())
 			return clone();
 		
-		ArrayBoundsLatticeElement ret = new ArrayBoundsLatticeElement(Math.min(min, other.min), Math.max(max,other.max));
-		ret.lmin = lmin == LimitValue.NEG_INFINITY || other.lmin == LimitValue.NEG_INFINITY? LimitValue.NEG_INFINITY : LimitValue.SOME_VALUE;
-		ret.lmax = lmax == LimitValue.POS_INFINITY || other.lmax == LimitValue.POS_INFINITY? LimitValue.POS_INFINITY : other.lmax;
-			
+		if (other.isTop())
+			return other.clone();
+		
+		int minValue = min == Integer.MIN_VALUE || other.max == Integer.MAX_VALUE ? Integer.MIN_VALUE : min - other.max;
+		int maxValue = max == Integer.MAX_VALUE || other.min == Integer.MIN_VALUE ? Integer.MAX_VALUE : max - other.min;
+						
+		ArrayBoundsLatticeElement ret = new ArrayBoundsLatticeElement(minValue, maxValue);
+		ret.lmin = lmin == LimitValue.NEG_INFINITY || other.lmax == LimitValue.POS_INFINITY ? LimitValue.NEG_INFINITY : LimitValue.SOME_VALUE;
+		ret.lmax = lmax == LimitValue.POS_INFINITY || other.lmin == LimitValue.NEG_INFINITY ? LimitValue.POS_INFINITY : LimitValue.SOME_VALUE;
+		
 		return ret;
 	}
 
-	// Junta dos intervalos en uno que contenga a ambos
+	// Multiplica dos intervalos
 	public ArrayBoundsLatticeElement multiply(ArrayBoundsLatticeElement other) {
-		if (isBottom())
+		if (isBottom() || other.isTop())
 			return other.clone();
 		
-		if (other.isBottom())
+		if (other.isBottom() || isTop())
 			return clone();
 		
-		ArrayBoundsLatticeElement ret = new ArrayBoundsLatticeElement(Math.min(min, other.min), Math.max(max,other.max));
-		ret.lmin = lmin == LimitValue.NEG_INFINITY || other.lmin == LimitValue.NEG_INFINITY? LimitValue.NEG_INFINITY : LimitValue.SOME_VALUE;
-		ret.lmax = lmax == LimitValue.POS_INFINITY || other.lmax == LimitValue.POS_INFINITY? LimitValue.POS_INFINITY : other.lmax;
-			
+		int aux1 = min == Integer.MIN_VALUE || other.min == Integer.MIN_VALUE ? Integer.MIN_VALUE : min * other.min;
+		int aux2 = min == Integer.MIN_VALUE || other.max == Integer.MAX_VALUE ? Integer.MIN_VALUE : min * other.max;
+		int aux3 = max == Integer.MAX_VALUE || other.min == Integer.MIN_VALUE ? Integer.MAX_VALUE : max * other.min;
+		int aux4 = max == Integer.MAX_VALUE || other.max == Integer.MAX_VALUE ? Integer.MAX_VALUE : max * other.max;
+		
+		int minValue = Math.min(aux1, Math.min(aux2, Math.min(aux3, aux4)));
+		int maxValue = Math.max(aux1, Math.max(aux2, Math.max(aux3, aux4)));
+		
+		ArrayBoundsLatticeElement ret = new ArrayBoundsLatticeElement(minValue, maxValue);
+		ret.lmin = minValue == Integer.MIN_VALUE ? LimitValue.NEG_INFINITY : LimitValue.SOME_VALUE;
+		ret.lmax = maxValue == Integer.MAX_VALUE ? LimitValue.POS_INFINITY : LimitValue.SOME_VALUE;
+		
 		return ret;
 	}
 

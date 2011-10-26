@@ -1,6 +1,7 @@
 package edu.cmu.cs.crystal.analysis.npe.annotations;
 
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 
 import edu.cmu.cs.crystal.annotations.AnnotationDatabase;
@@ -10,11 +11,13 @@ import edu.cmu.cs.crystal.simple.AbstractingTransferFunction;
 import edu.cmu.cs.crystal.simple.TupleLatticeElement;
 import edu.cmu.cs.crystal.simple.TupleLatticeOperations;
 import edu.cmu.cs.crystal.tac.model.ArrayInitInstruction;
+import edu.cmu.cs.crystal.tac.model.BinaryOperation;
+import edu.cmu.cs.crystal.tac.model.BinaryOperator;
 import edu.cmu.cs.crystal.tac.model.CopyInstruction;
+import edu.cmu.cs.crystal.tac.model.LoadFieldInstruction;
 import edu.cmu.cs.crystal.tac.model.LoadLiteralInstruction;
 import edu.cmu.cs.crystal.tac.model.MethodCallInstruction;
 import edu.cmu.cs.crystal.tac.model.NewArrayInstruction;
-import edu.cmu.cs.crystal.tac.model.NewObjectInstruction;
 import edu.cmu.cs.crystal.tac.model.Variable;
 
 public class NPEAnnotatedTransferFunction extends AbstractingTransferFunction<TupleLatticeElement<Variable, ArrayBoundsLatticeElement>> {
@@ -46,11 +49,11 @@ public class NPEAnnotatedTransferFunction extends AbstractingTransferFunction<Tu
 			SingleVariableDeclaration decl = (SingleVariableDeclaration) method.parameters().get(ndx);
 			Variable paramVar = getAnalysisContext().getSourceVariable(decl.resolveBinding());
 			
-			//aca hay que poner que si el parametro es un int o Integer sin nada mas
-			//tome como que es top, porq puede ser cualquier cosa, 
-			//y si es un array puede ser lo mas chico posible
-			//no encuentro como hacerlo :(
-			//con esto el primer metodo daria maybe out of bound
+			if (paramVar.resolveType().isArray()) {
+				def.put(paramVar, ArrayBoundsLatticeElement.bottom());
+			} else {
+				def.put(paramVar, ArrayBoundsLatticeElement.top());
+			}
 		}
 		
 		return def;
@@ -63,6 +66,26 @@ public class NPEAnnotatedTransferFunction extends AbstractingTransferFunction<Tu
 		return ops;
 	}
 
+	@Override
+	public TupleLatticeElement<Variable, ArrayBoundsLatticeElement> transfer(
+			LoadFieldInstruction instr,
+			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> value) {
+	
+		if (instr.getFieldName().equals("length")) {
+			System.out.println("llama a length "+instr.getAccessedObjectOperand());
+		}
+		
+		return value;
+	}
+	
+	@Override
+	public TupleLatticeElement<Variable, ArrayBoundsLatticeElement> transfer(
+			BinaryOperation instr,
+			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> value) {
+		System.out.println("BinOp: "+instr.getOperator()+" "+instr.getOperand1()+" "+instr.getOperand2());
+		return value;
+	}
+		
 	@Override
 	public TupleLatticeElement<Variable, ArrayBoundsLatticeElement> transfer(
 			ArrayInitInstruction instr,
