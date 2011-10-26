@@ -2,6 +2,8 @@ package edu.cmu.cs.crystal.analysis.npe.annotations;
 
 import java.util.ArrayList;
 
+import org.eclipse.jdt.internal.core.util.ToStringSorter;
+
 
 /**
  *
@@ -144,6 +146,10 @@ public class ArrayBoundsLatticeElement {
 		ret.lmax = lmax;
 		
 		return ret;
+	}
+	
+	public String toString(){
+		return "[ "+ min +" (" + lmin + ") , "+ max +" (" + lmax + ") ]";
 	}
 };
 

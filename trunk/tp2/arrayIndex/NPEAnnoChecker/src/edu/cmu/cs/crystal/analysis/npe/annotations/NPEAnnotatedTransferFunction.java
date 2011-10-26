@@ -23,7 +23,7 @@ public class NPEAnnotatedTransferFunction extends AbstractingTransferFunction<Tu
 	 * give it an instance of NullLatticeOperations. We also want the default value to be maybe null.
 	 */
 	TupleLatticeOperations<Variable, ArrayBoundsLatticeElement> ops =
-		new TupleLatticeOperations<Variable, ArrayBoundsLatticeElement>(new ArrayBoundsLatticeOperations(), ArrayBoundsLatticeElement.top());
+		new TupleLatticeOperations<Variable, ArrayBoundsLatticeElement>(new ArrayBoundsLatticeOperations(), ArrayBoundsLatticeElement.bottom());
 	private AnnotationDatabase annoDB;
 	
 	public NPEAnnotatedTransferFunction(AnnotationDatabase annoDB) {
@@ -45,6 +45,12 @@ public class NPEAnnotatedTransferFunction extends AbstractingTransferFunction<Tu
 		for (int ndx = 0; ndx < method.parameters().size(); ndx++) {
 			SingleVariableDeclaration decl = (SingleVariableDeclaration) method.parameters().get(ndx);
 			Variable paramVar = getAnalysisContext().getSourceVariable(decl.resolveBinding());
+			
+			//aca hay que poner que si el parametro es un int o Integer sin nada mas
+			//tome como que es top, porq puede ser cualquier cosa, 
+			//y si es un array puede ser lo mas chico posible
+			//no encuentro como hacerlo :(
+			//con esto el primer metodo daria maybe out of bound
 		}
 		
 		return def;
@@ -61,6 +67,7 @@ public class NPEAnnotatedTransferFunction extends AbstractingTransferFunction<Tu
 	public TupleLatticeElement<Variable, ArrayBoundsLatticeElement> transfer(
 			ArrayInitInstruction instr,
 			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> value) {
+		
 		if (instr.getInitOperands().size() > 0)
 			value.put(instr.getTarget(), new ArrayBoundsLatticeElement(0, instr.getInitOperands().size()-1) );
 		else
@@ -94,10 +101,12 @@ public class NPEAnnotatedTransferFunction extends AbstractingTransferFunction<Tu
 	public TupleLatticeElement<Variable, ArrayBoundsLatticeElement> transfer(
 			NewArrayInstruction instr,
 			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> value) {
-		if (instr.isInitialized())
-		{
-			
-			//value.put(instr.getTarget(), ArrayBoundsLatticeElement.NOT_NULL);
+		
+		if (instr.isInitialized()) {
+			int dim = instr.getDimensions();
+			value.put(instr.getTarget(), new ArrayBoundsLatticeElement(0, dim-1));
+		} else {
+			value.put(instr.getTarget(), ArrayBoundsLatticeElement.bottom());
 		}
 		
 		return value;

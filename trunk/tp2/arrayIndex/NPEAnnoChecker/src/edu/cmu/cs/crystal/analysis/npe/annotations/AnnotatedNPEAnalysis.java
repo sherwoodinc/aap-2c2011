@@ -73,12 +73,27 @@ public class AnnotatedNPEAnalysis extends AbstractCrystalMethodAnalysis {
 		private void checkVariable(TupleLatticeElement<Variable, ArrayBoundsLatticeElement> tuple, Expression nodeToCheck) {
 			Variable varToCheck = flowAnalysis.getVariable(nodeToCheck);
 			ArrayBoundsLatticeElement element = tuple.get(varToCheck);
+		
+		}
+		
+		private void checkIndex(TupleLatticeElement<Variable, ArrayBoundsLatticeElement> tuple, Expression array, Expression index){
+			Variable varArray = flowAnalysis.getVariable(array);
+			ArrayBoundsLatticeElement elementArray = tuple.get(varArray);	
 			
+			Variable varIndex = flowAnalysis.getVariable(index);
+			ArrayBoundsLatticeElement elementIndex = tuple.get(varIndex);
+			
+			System.out.println(elementIndex.toString() + " in "+ elementArray.toString());
+			
+			if( ! elementArray.contains(elementIndex) ) 
+				getReporter().reportUserProblem("Array index '"+ index +"' may be out of bound in "+ array, index, getName(), SEVERITY.WARNING);
 		}
 
 		@Override
 		public void endVisit(ArrayAccess node) {
 			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> beforeTuple = flowAnalysis.getResultsBefore(node);
+			
+			checkIndex(beforeTuple, node.getArray(), node.getIndex());
 			
 			checkVariable(beforeTuple, node.getArray());
 		}
