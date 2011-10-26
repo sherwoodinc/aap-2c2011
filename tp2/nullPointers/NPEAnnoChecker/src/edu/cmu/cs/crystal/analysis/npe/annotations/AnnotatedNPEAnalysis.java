@@ -30,6 +30,7 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.SimpleName;
 
 import edu.cmu.cs.crystal.AbstractCrystalMethodAnalysis;
 import edu.cmu.cs.crystal.IAnalysisReporter.SEVERITY;
@@ -121,6 +122,17 @@ public class AnnotatedNPEAnalysis extends AbstractCrystalMethodAnalysis {
 				checkVariable(beforeTuple, node.getQualifier());
 			}
 		}
+		
+		@Override
+        public void endVisit(SimpleName node) {
+            if (node.resolveBinding() instanceof IVariableBinding && !node.isDeclaration()) {
+                TupleLatticeElement<Variable, NullLatticeElement> beforeTuple = flowAnalysis.getResultsBefore(node);
+                IVariableBinding binding = (IVariableBinding) node.resolveBinding();
+                if(binding.isParameter())
+                    checkVariable(beforeTuple, node);
+            }
+        }
+
 		
 		@Override
 		public void endVisit(Assignment node) {
