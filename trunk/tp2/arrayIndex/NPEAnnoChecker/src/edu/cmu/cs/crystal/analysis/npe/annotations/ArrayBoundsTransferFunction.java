@@ -24,7 +24,7 @@ import edu.cmu.cs.crystal.tac.model.LoadLiteralInstruction;
 import edu.cmu.cs.crystal.tac.model.NewArrayInstruction;
 import edu.cmu.cs.crystal.tac.model.Variable;
 
-public class NPEAnnotatedTransferFunction extends AbstractTACBranchSensitiveTransferFunction<TupleLatticeElement<Variable, ArrayBoundsLatticeElement>> {
+public class ArrayBoundsTransferFunction extends AbstractTACBranchSensitiveTransferFunction<TupleLatticeElement<Variable, ArrayBoundsLatticeElement>> {
 	/**
 	 * The operations for this lattice. We want to have a tuple lattice from variables to null lattice elements, so we
 	 * give it an instance of NullLatticeOperations. We also want the default value to be maybe null.
@@ -33,7 +33,7 @@ public class NPEAnnotatedTransferFunction extends AbstractTACBranchSensitiveTran
 		new TupleLatticeOperations<Variable, ArrayBoundsLatticeElement>(new ArrayBoundsLatticeOperations(), ArrayBoundsLatticeElement.bottom());
 	private AnnotationDatabase annoDB;
 	
-	public NPEAnnotatedTransferFunction(AnnotationDatabase annoDB) {
+	public ArrayBoundsTransferFunction(AnnotationDatabase annoDB) {
 		this.annoDB = annoDB;
 	}	
 
