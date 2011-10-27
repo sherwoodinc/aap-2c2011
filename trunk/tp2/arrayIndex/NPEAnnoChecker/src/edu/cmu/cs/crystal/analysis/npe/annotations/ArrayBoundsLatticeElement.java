@@ -2,7 +2,11 @@ package edu.cmu.cs.crystal.analysis.npe.annotations;
 
 import java.util.ArrayList;
 
+import org.eclipse.jdt.internal.codeassist.select.SelectionOnMessageSend;
 import org.eclipse.jdt.internal.core.util.ToStringSorter;
+
+import edu.cmu.cs.crystal.tac.model.BinaryOperation;
+import edu.cmu.cs.crystal.tac.model.BinaryOperator;
 
 
 /**
@@ -163,7 +167,47 @@ public class ArrayBoundsLatticeElement {
 	}
 	
 	public String toString(){
-		return "[ "+ min +" (" + lmin + ") , "+ max +" (" + lmax + ") ]";
+		if (isBottom())
+			return "[]";
+		
+		return "[ "+
+		(lmin == LimitValue.SOME_VALUE? min : "-INF") + " , " + 
+		(lmax == LimitValue.SOME_VALUE? max : "INF" ) + " ]";
 	}
+	
+	public ArrayBoundsLatticeElement getInterval(BinaryOperator op, ArrayBoundsLatticeElement than)
+	{		
+		if (than.isBottom() && op == BinaryOperator.REL_EQ)
+			return top();
+			
+		ArrayBoundsLatticeElement ret = than.clone();
+		switch(op)
+		{
+			case REL_EQ:				
+				break;
+				
+			case REL_GEQ:
+				ret.lmax = LimitValue.POS_INFINITY;
+				break;
+
+			case REL_LEQ:
+				ret.lmin = LimitValue.NEG_INFINITY;
+				break;
+
+			case REL_GT:
+				if (than.lmin == LimitValue.SOME_VALUE)
+					ret.min += 1;
+				ret.lmax = LimitValue.POS_INFINITY;
+				break;
+
+			case REL_LT:
+				if (than.lmin == LimitValue.SOME_VALUE)
+					ret.max -= 1;
+				ret.lmin = LimitValue.NEG_INFINITY;
+				break;
+		}
+		return ret;
+	}
+	
 };
 
