@@ -1,15 +1,21 @@
 package edu.cmu.cs.crystal.analysis.npe.annotations;
 
+import java.util.List;
+
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 
 import edu.cmu.cs.crystal.annotations.AnnotationDatabase;
 import edu.cmu.cs.crystal.annotations.AnnotationSummary;
+import edu.cmu.cs.crystal.flow.ILabel;
 import edu.cmu.cs.crystal.flow.ILatticeOperations;
+import edu.cmu.cs.crystal.flow.IResult;
+import edu.cmu.cs.crystal.flow.LabeledSingleResult;
 import edu.cmu.cs.crystal.simple.AbstractingTransferFunction;
 import edu.cmu.cs.crystal.simple.TupleLatticeElement;
 import edu.cmu.cs.crystal.simple.TupleLatticeOperations;
+import edu.cmu.cs.crystal.tac.AbstractTACBranchSensitiveTransferFunction;
 import edu.cmu.cs.crystal.tac.model.ArrayInitInstruction;
 import edu.cmu.cs.crystal.tac.model.BinaryOperation;
 import edu.cmu.cs.crystal.tac.model.BinaryOperator;
@@ -20,7 +26,7 @@ import edu.cmu.cs.crystal.tac.model.MethodCallInstruction;
 import edu.cmu.cs.crystal.tac.model.NewArrayInstruction;
 import edu.cmu.cs.crystal.tac.model.Variable;
 
-public class NPEAnnotatedTransferFunction extends AbstractingTransferFunction<TupleLatticeElement<Variable, ArrayBoundsLatticeElement>> {
+public class NPEAnnotatedTransferFunction extends AbstractTACBranchSensitiveTransferFunction<TupleLatticeElement<Variable, ArrayBoundsLatticeElement>> {
 	/**
 	 * The operations for this lattice. We want to have a tuple lattice from variables to null lattice elements, so we
 	 * give it an instance of NullLatticeOperations. We also want the default value to be maybe null.
@@ -67,23 +73,25 @@ public class NPEAnnotatedTransferFunction extends AbstractingTransferFunction<Tu
 	}
 
 	@Override
-	public TupleLatticeElement<Variable, ArrayBoundsLatticeElement> transfer(
+	public IResult<TupleLatticeElement<Variable, ArrayBoundsLatticeElement>> transfer(
 			LoadFieldInstruction instr,
+			List<ILabel> labels,
 			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> value) {
 	
 		if (instr.getFieldName().equals("length")) {
 			System.out.println("llama a length "+instr.getAccessedObjectOperand());
 		}
-		
-		return value;
+		value.put(instr.getTarget(), value.get(instr.getSourceObject()));
+		return LabeledSingleResult.createResult(value,labels);
 	}
 	
 	@Override
-	public TupleLatticeElement<Variable, ArrayBoundsLatticeElement> transfer(
+	public IResult<TupleLatticeElement<Variable, ArrayBoundsLatticeElement>> transfer(
 			BinaryOperation instr,
+			List<ILabel> labels,
 			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> value) {
 		System.out.println("BinOp: "+instr.getOperator()+" "+instr.getOperand1()+" "+instr.getOperand2());
-		ArrayBoundsLatticeElement res;
+		ArrayBoundsLatticeElement res = ArrayBoundsLatticeElement.top();
 		ArrayBoundsLatticeElement izq = value.get(instr.getOperand1());
 		ArrayBoundsLatticeElement der = value.get(instr.getOperand2());
 		switch(instr.getOperator())	
@@ -101,44 +109,43 @@ public class NPEAnnotatedTransferFunction extends AbstractingTransferFunction<Tu
 			break;
 
 		case REL_EQ:
-			res = der.clone();
-			break;
-
+		case REL_LT:
 		case REL_GT:
-			// TODO
-			res = der.clone();
+		case REL_GEQ:
+		case REL_LEQ:
+			res = izq.getInterval(instr.getOperator(), der);
 			break;
-
-		default:
-			res = izq.clone();		
 		}
 		value.put(instr.getTarget(), res);
-		return value;
+		return LabeledSingleResult.createResult(value,labels);
 	}
 		
 	@Override
-	public TupleLatticeElement<Variable, ArrayBoundsLatticeElement> transfer(
+	public IResult<TupleLatticeElement<Variable, ArrayBoundsLatticeElement>> transfer(
 			ArrayInitInstruction instr,
+			List<ILabel> labels,
 			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> value) {
 		
 		if (instr.getInitOperands().size() > 0)
 			value.put(instr.getTarget(), new ArrayBoundsLatticeElement(0, instr.getInitOperands().size()-1) );
 		else
 			value.put(instr.getTarget(), ArrayBoundsLatticeElement.bottom() );
-		return value;
+		return LabeledSingleResult.createResult(value,labels);
 	}
 
 	@Override
-	public TupleLatticeElement<Variable, ArrayBoundsLatticeElement> transfer(
+	public IResult<TupleLatticeElement<Variable, ArrayBoundsLatticeElement>> transfer(
 			CopyInstruction instr,
+			List<ILabel> labels,
 			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> value) {
 		value.put(instr.getTarget(), value.get(instr.getOperand()));
-		return value;
+		return LabeledSingleResult.createResult(value,labels);
 	}
 
 	@Override
-	public TupleLatticeElement<Variable, ArrayBoundsLatticeElement> transfer(
+	public IResult<TupleLatticeElement<Variable, ArrayBoundsLatticeElement>> transfer(
 			LoadLiteralInstruction instr,
+			List<ILabel> labels,
 			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> value) {
 		 
 		if (instr.isNumber() && instr.getLiteral() instanceof java.lang.String) {
@@ -147,12 +154,13 @@ public class NPEAnnotatedTransferFunction extends AbstractingTransferFunction<Tu
 		}
 		else
 			value.put(instr.getTarget(), ArrayBoundsLatticeElement.top());
-		return value;
+		return LabeledSingleResult.createResult(value,labels);
 	}
 
 	@Override
-	public TupleLatticeElement<Variable, ArrayBoundsLatticeElement> transfer(
+	public IResult<TupleLatticeElement<Variable, ArrayBoundsLatticeElement>> transfer(
 			NewArrayInstruction instr,
+			List<ILabel> labels,
 			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> value) {
 		
 		if (instr.isInitialized()) {
@@ -162,6 +170,6 @@ public class NPEAnnotatedTransferFunction extends AbstractingTransferFunction<Tu
 			value.put(instr.getTarget(), ArrayBoundsLatticeElement.bottom());
 		}
 		
-		return value;
+		return LabeledSingleResult.createResult(value,labels);
 	}
 }
