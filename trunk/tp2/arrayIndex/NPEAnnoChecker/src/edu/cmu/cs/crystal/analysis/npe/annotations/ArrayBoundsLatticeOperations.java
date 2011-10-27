@@ -14,7 +14,7 @@ public class ArrayBoundsLatticeOperations extends SimpleLatticeOperations<ArrayB
 	@Override
 	public boolean atLeastAsPrecise(ArrayBoundsLatticeElement left,
 			ArrayBoundsLatticeElement right) {
-		return left.contains(right);
+		return right.contains(left);
 	}
 
 	@Override
