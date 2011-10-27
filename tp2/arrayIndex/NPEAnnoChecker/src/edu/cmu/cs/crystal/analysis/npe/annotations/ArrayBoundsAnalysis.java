@@ -46,7 +46,7 @@ import edu.cmu.cs.crystal.util.Utilities;
  * 
  * @author ciera
  */
-public class AnnotatedNPEAnalysis extends AbstractCrystalMethodAnalysis {
+public class ArrayBoundsAnalysis extends AbstractCrystalMethodAnalysis {
 	public static final String NON_NULL_ANNO = "edu.cmu.cs.crystal.annos.NonNull";
 	
 	TACFlowAnalysis<TupleLatticeElement<Variable, ArrayBoundsLatticeElement>> flowAnalysis;
@@ -58,7 +58,7 @@ public class AnnotatedNPEAnalysis extends AbstractCrystalMethodAnalysis {
 
 	@Override
 	public void analyzeMethod(MethodDeclaration d) {
-		NPEAnnotatedTransferFunction tf = new NPEAnnotatedTransferFunction(getInput().getAnnoDB());
+		ArrayBoundsTransferFunction tf = new ArrayBoundsTransferFunction(getInput().getAnnoDB());
 		flowAnalysis = new TACFlowAnalysis<TupleLatticeElement<Variable, ArrayBoundsLatticeElement>>(tf, getInput());
 		
 		d.accept(new NPEFlowVisitor());
