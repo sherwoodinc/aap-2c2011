@@ -83,6 +83,36 @@ public class NPEAnnotatedTransferFunction extends AbstractingTransferFunction<Tu
 			BinaryOperation instr,
 			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> value) {
 		System.out.println("BinOp: "+instr.getOperator()+" "+instr.getOperand1()+" "+instr.getOperand2());
+		ArrayBoundsLatticeElement res;
+		ArrayBoundsLatticeElement izq = value.get(instr.getOperand1());
+		ArrayBoundsLatticeElement der = value.get(instr.getOperand2());
+		switch(instr.getOperator())	
+		{
+		case ARIT_ADD:
+			res = izq.add(der);
+			break;
+			
+		case ARIT_SUBTRACT:
+			res = izq.substract(der);
+			break;
+			
+		case ARIT_MULTIPLY:
+			res = izq.multiply(der);
+			break;
+
+		case REL_EQ:
+			res = der.clone();
+			break;
+
+		case REL_GT:
+			// TODO
+			res = der.clone();
+			break;
+
+		default:
+			res = izq.clone();		
+		}
+		value.put(instr.getTarget(), res);
 		return value;
 	}
 		
