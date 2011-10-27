@@ -94,31 +94,17 @@ public class AnnotatedNPEAnalysis extends AbstractCrystalMethodAnalysis {
 			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> beforeTuple = flowAnalysis.getResultsBefore(node);
 			
 			checkIndex(beforeTuple, node.getArray(), node.getIndex());
-			
-			checkVariable(beforeTuple, node.getArray());
 		}
 
 		@Override
 		public void endVisit(FieldAccess node) {
 			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> beforeTuple = flowAnalysis.getResultsBefore(node);
-			
-			if (node.getExpression() != null)
-				checkVariable(beforeTuple, node.getExpression());
 		}
 		
 		@Override
 		public void endVisit(MethodInvocation node) {
 			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> beforeTuple = flowAnalysis.getResultsBefore(node);
 			
-			if (node.getExpression() != null)
-				checkVariable(beforeTuple, node.getExpression());
-			
-			AnnotationSummary summary = getInput().getAnnoDB().getSummaryForMethod(node.resolveMethodBinding());
-			
-			for (int ndx = 0; ndx < node.arguments().size(); ndx++) {	
-				if (summary.getParameter(ndx, NON_NULL_ANNO) != null) //is this parameter annotated with @Nonnull?
-					checkVariable(beforeTuple, (Expression) node.arguments().get(ndx));
-			}
 		}
 
 		@Override
@@ -127,9 +113,7 @@ public class AnnotatedNPEAnalysis extends AbstractCrystalMethodAnalysis {
 			//To check for this, see what the binding is.
 			if (node.resolveBinding() instanceof IVariableBinding) {
 				//now we know it's field access.
-				TupleLatticeElement<Variable, ArrayBoundsLatticeElement> beforeTuple = flowAnalysis.getResultsBefore(node);
-				
-				checkVariable(beforeTuple, node.getQualifier());
+				TupleLatticeElement<Variable, ArrayBoundsLatticeElement> beforeTuple = flowAnalysis.getResultsBefore(node);				
 			}
 		}
 		
@@ -137,18 +121,6 @@ public class AnnotatedNPEAnalysis extends AbstractCrystalMethodAnalysis {
 		public void endVisit(Assignment node) {
 			Expression left = node.getLeftHandSide();
 			Expression right = node.getRightHandSide();
-			
-			if (left instanceof Name && ((Name)left).resolveBinding() instanceof IVariableBinding) {
-				IVariableBinding binding = (IVariableBinding) ((Name)left).resolveBinding();
-			
-				if (binding.isParameter()) {
-					IMethodBinding method = Utilities.getMethodDeclaration(node).resolveBinding();
-					AnnotationSummary summary = getInput().getAnnoDB().getSummaryForMethod(method);
-				
-					if (summary.getParameter(binding.getName(), NON_NULL_ANNO) != null)
-						checkVariable(flowAnalysis.getResultsBefore(left), right);
-				}
-			}
 		}
 	}
 }

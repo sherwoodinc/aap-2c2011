@@ -1,11 +1,5 @@
 package edu.cmu.cs.crystal.analysis.npe.annotations;
 
-import java.util.ArrayList;
-
-import org.eclipse.jdt.internal.codeassist.select.SelectionOnMessageSend;
-import org.eclipse.jdt.internal.core.util.ToStringSorter;
-
-import edu.cmu.cs.crystal.tac.model.BinaryOperation;
 import edu.cmu.cs.crystal.tac.model.BinaryOperator;
 
 

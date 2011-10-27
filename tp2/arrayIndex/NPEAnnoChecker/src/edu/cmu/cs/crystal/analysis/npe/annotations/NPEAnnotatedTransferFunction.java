@@ -3,26 +3,24 @@ package edu.cmu.cs.crystal.analysis.npe.annotations;
 import java.util.List;
 
 import org.eclipse.jdt.core.dom.MethodDeclaration;
-import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 
 import edu.cmu.cs.crystal.annotations.AnnotationDatabase;
 import edu.cmu.cs.crystal.annotations.AnnotationSummary;
+import edu.cmu.cs.crystal.cfg.eclipse.Label;
 import edu.cmu.cs.crystal.flow.ILabel;
 import edu.cmu.cs.crystal.flow.ILatticeOperations;
 import edu.cmu.cs.crystal.flow.IResult;
+import edu.cmu.cs.crystal.flow.LabeledResult;
 import edu.cmu.cs.crystal.flow.LabeledSingleResult;
-import edu.cmu.cs.crystal.simple.AbstractingTransferFunction;
 import edu.cmu.cs.crystal.simple.TupleLatticeElement;
 import edu.cmu.cs.crystal.simple.TupleLatticeOperations;
 import edu.cmu.cs.crystal.tac.AbstractTACBranchSensitiveTransferFunction;
 import edu.cmu.cs.crystal.tac.model.ArrayInitInstruction;
 import edu.cmu.cs.crystal.tac.model.BinaryOperation;
-import edu.cmu.cs.crystal.tac.model.BinaryOperator;
 import edu.cmu.cs.crystal.tac.model.CopyInstruction;
 import edu.cmu.cs.crystal.tac.model.LoadFieldInstruction;
 import edu.cmu.cs.crystal.tac.model.LoadLiteralInstruction;
-import edu.cmu.cs.crystal.tac.model.MethodCallInstruction;
 import edu.cmu.cs.crystal.tac.model.NewArrayInstruction;
 import edu.cmu.cs.crystal.tac.model.Variable;
 
@@ -116,8 +114,18 @@ public class NPEAnnotatedTransferFunction extends AbstractTACBranchSensitiveTran
 			res = izq.getInterval(instr.getOperator(), der);
 			break;
 		}
-		value.put(instr.getTarget(), res);
-		return LabeledSingleResult.createResult(value,labels);
+		
+		if (labels.size() > 1) {
+			LabeledResult<TupleLatticeElement<Variable, ArrayBoundsLatticeElement>> ret = LabeledResult.createResult(labels,value);
+			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> valueTrue = ops.copy(value);
+			valueTrue.put(instr.getOperand1(), res);
+			ret.put(labels.get(0), valueTrue);
+			return ret;				
+		}
+		else {
+			value.put(instr.getTarget(), res);
+			return LabeledSingleResult.createResult(value, labels);
+		}
 	}
 		
 	@Override
@@ -152,8 +160,6 @@ public class NPEAnnotatedTransferFunction extends AbstractTACBranchSensitiveTran
 			int index = Integer.parseInt((String)instr.getLiteral());
 			value.put(instr.getTarget(), new ArrayBoundsLatticeElement(index,index));
 		}
-		else
-			value.put(instr.getTarget(), ArrayBoundsLatticeElement.top());
 		return LabeledSingleResult.createResult(value,labels);
 	}
 
@@ -163,13 +169,10 @@ public class NPEAnnotatedTransferFunction extends AbstractTACBranchSensitiveTran
 			List<ILabel> labels,
 			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> value) {
 		
-		if (instr.isInitialized()) {
-			int dim = instr.getDimensions();
-			value.put(instr.getTarget(), new ArrayBoundsLatticeElement(0, dim-1));
-		} else {
-			value.put(instr.getTarget(), ArrayBoundsLatticeElement.bottom());
-		}
+		Variable dim = instr.getDimensionOperands().get(0);
+		ArrayBoundsLatticeElement adim = value.get(dim);
+		value.put(instr.getTarget(), adim.merge(new ArrayBoundsLatticeElement(1, 1)).substract(new ArrayBoundsLatticeElement(1, 1)));
 		
 		return LabeledSingleResult.createResult(value,labels);
 	}
-}
+	}
