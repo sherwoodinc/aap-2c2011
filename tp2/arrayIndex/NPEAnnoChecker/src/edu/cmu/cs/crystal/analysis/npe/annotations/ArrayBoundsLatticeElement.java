@@ -66,7 +66,7 @@ public class ArrayBoundsLatticeElement {
 	public boolean contains(ArrayBoundsLatticeElement other) {
 		
 		if (isBottom())
-			return other.isBottom();
+			return false;
 		
 		if (other.isBottom())
 			return true;			
@@ -74,6 +74,28 @@ public class ArrayBoundsLatticeElement {
 		return leftIncludes(other) && rightIncludes(other);
 	}
 	
+	public boolean overlaps(ArrayBoundsLatticeElement other) {
+		
+		if (isBottom())
+			return false;
+		
+		if (other.isBottom())
+			return true;			
+		
+		return leftIncludes(other) || rightIncludes(other);
+	}
+	
+	public ArrayBoundsLatticeElement intersect(ArrayBoundsLatticeElement other)
+	{
+		if (isBottom() || other.isBottom())
+			return bottom();
+		
+		ArrayBoundsLatticeElement ret = new ArrayBoundsLatticeElement(Math.max(min, other.min), Math.min(max, other.max));
+		ret.lmin = lmin == LimitValue.NEG_INFINITY && other.lmin == LimitValue.NEG_INFINITY ? LimitValue.NEG_INFINITY : LimitValue.SOME_VALUE;
+		ret.lmax = lmax == LimitValue.POS_INFINITY && other.lmax == LimitValue.POS_INFINITY ? LimitValue.POS_INFINITY : LimitValue.SOME_VALUE;
+		
+		return ret;
+	}	
 	// Junta dos intervalos en uno que contenga a ambos
 	public ArrayBoundsLatticeElement merge(ArrayBoundsLatticeElement other) {
 		if (isBottom() || other.isTop())
@@ -168,39 +190,40 @@ public class ArrayBoundsLatticeElement {
 		(lmin == LimitValue.SOME_VALUE? min : "-INF") + " , " + 
 		(lmax == LimitValue.SOME_VALUE? max : "INF" ) + " ]";
 	}
-	
-	public ArrayBoundsLatticeElement getInterval(BinaryOperator op, ArrayBoundsLatticeElement than)
-	{		
-		if (than.isBottom() && op == BinaryOperator.REL_EQ)
-			return top();
-			
-		ArrayBoundsLatticeElement ret = than.clone();
+	 
+	public static void getIntervals(BinaryOperator op, ArrayBoundsLatticeElement op0, ArrayBoundsLatticeElement op1, ArrayBoundsLatticeElement out0, ArrayBoundsLatticeElement out1)
+	{					
+		out0 = op0.clone();
+		out1 = op1.clone();
+		// Calcula los intervalos resultantes para cada 
 		switch(op)
 		{
-			case REL_EQ:				
+			case REL_EQ:
+				out0 = op1.intersect(op1);
+				out1 = out0.clone();
 				break;
 				
 			case REL_GEQ:
-				ret.lmax = LimitValue.POS_INFINITY;
+				out0.lmax = LimitValue.POS_INFINITY;
+				
 				break;
 
 			case REL_LEQ:
-				ret.lmin = LimitValue.NEG_INFINITY;
+				out0.lmin = LimitValue.NEG_INFINITY;
 				break;
 
 			case REL_GT:
-				if (than.lmin == LimitValue.SOME_VALUE)
-					ret.min += 1;
-				ret.lmax = LimitValue.POS_INFINITY;
+				if (op1.lmin == LimitValue.SOME_VALUE)
+					out0.min += 1;
+				out0.lmax = LimitValue.POS_INFINITY;
 				break;
 
 			case REL_LT:
-				if (than.lmin == LimitValue.SOME_VALUE)
-					ret.max -= 1;
-				ret.lmin = LimitValue.NEG_INFINITY;
+				if (op1.lmin == LimitValue.SOME_VALUE)
+					out0.max -= 1;
+				out0.lmin = LimitValue.NEG_INFINITY;
 				break;
 		}
-		return ret;
 	}
 	
 };

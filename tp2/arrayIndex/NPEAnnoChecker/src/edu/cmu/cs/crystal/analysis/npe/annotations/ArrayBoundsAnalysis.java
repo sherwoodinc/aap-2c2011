@@ -21,23 +21,15 @@ package edu.cmu.cs.crystal.analysis.npe.annotations;
 
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.ArrayAccess;
-import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.FieldAccess;
-import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
-import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.QualifiedName;
 
 import edu.cmu.cs.crystal.AbstractCrystalMethodAnalysis;
 import edu.cmu.cs.crystal.IAnalysisReporter.SEVERITY;
-import edu.cmu.cs.crystal.annotations.AnnotationSummary;
-import edu.cmu.cs.crystal.simple.TupleLatticeElement;
 import edu.cmu.cs.crystal.tac.TACFlowAnalysis;
 import edu.cmu.cs.crystal.tac.model.Variable;
-import edu.cmu.cs.crystal.util.Utilities;
 
 /**
  * A simple flow analysis. This analysis is almost identical to @link{edu.cmu.cs.crystal.analysis.npe.simpleflow.SimpleNPEAnalysis},
@@ -49,7 +41,7 @@ import edu.cmu.cs.crystal.util.Utilities;
 public class ArrayBoundsAnalysis extends AbstractCrystalMethodAnalysis {
 	public static final String NON_NULL_ANNO = "edu.cmu.cs.crystal.annos.NonNull";
 	
-	TACFlowAnalysis<TupleLatticeElement<Variable, ArrayBoundsLatticeElement>> flowAnalysis;
+	TACFlowAnalysis<PairLatticeElement> flowAnalysis;
 
 	@Override
 	public String getName() {
@@ -58,53 +50,50 @@ public class ArrayBoundsAnalysis extends AbstractCrystalMethodAnalysis {
 
 	@Override
 	public void analyzeMethod(MethodDeclaration d) {
-		ArrayBoundsTransferFunction tf = new ArrayBoundsTransferFunction(getInput().getAnnoDB());
-		flowAnalysis = new TACFlowAnalysis<TupleLatticeElement<Variable, ArrayBoundsLatticeElement>>(tf, getInput());
+		ArrayBoundsTransferFunction tf = new ArrayBoundsTransferFunction();
+		flowAnalysis = new TACFlowAnalysis<PairLatticeElement>(tf, getInput());
 		
-		d.accept(new NPEFlowVisitor());
+		d.accept(new ArrayFlowVisitor());
 	}
 
 	/**
 	 * The visitor for the analysis.
 	 * @author ciera
 	 */
-	public class NPEFlowVisitor extends ASTVisitor {
-
-		private void checkVariable(TupleLatticeElement<Variable, ArrayBoundsLatticeElement> tuple, Expression nodeToCheck) {
-			Variable varToCheck = flowAnalysis.getVariable(nodeToCheck);
-			ArrayBoundsLatticeElement element = tuple.get(varToCheck);
+	public class ArrayFlowVisitor extends ASTVisitor {
 		
-		}
-		
-		private void checkIndex(TupleLatticeElement<Variable, ArrayBoundsLatticeElement> tuple, Expression array, Expression index){
+		private void checkIndex(PairLatticeElement tuple, Expression array, Expression index){
 			Variable varArray = flowAnalysis.getVariable(array);
-			ArrayBoundsLatticeElement elementArray = tuple.get(varArray);	
-			
 			Variable varIndex = flowAnalysis.getVariable(index);
-			ArrayBoundsLatticeElement elementIndex = tuple.get(varIndex);
+			ArrayBoundsLatticeElement elementIndex = tuple.values.get(varIndex);
 			
-			System.out.println(elementIndex.toString() + " in "+ elementArray.toString());
-			
-			if( ! elementArray.contains(elementIndex) ) 
-				getReporter().reportUserProblem("Array index '"+ index +"' may be out of bound in "+ array, index, getName(), SEVERITY.WARNING);
+			System.out.println(elementIndex.toString() + " in "+ varArray.toString());
+
+			if (tuple.arrayLenghts.containsKey(varArray))
+			{
+				if (tuple.arrayLenghts.get(varArray).isEmpty())
+				{
+					getReporter().reportUserProblem("Array index '"+ index +"' may be out of bound in "+ array, index, getName(), SEVERITY.WARNING);
+					return;
+				}
+				for (Variable v: tuple.arrayLenghts.get(varArray))
+				{				
+					
+					if( ! tuple.values.get(v).contains(elementIndex) ) 
+						getReporter().reportUserProblem("Array index '"+ index +"' may be out of bound in "+ array, index, getName(), SEVERITY.WARNING);
+				}
+			}
+			else
+				if( ! tuple.values.get(varArray).contains(elementIndex) ) 
+					getReporter().reportUserProblem("Array index '"+ index +"' may be out of bound in "+ array, index, getName(), SEVERITY.WARNING);
+				
 		}
 
 		@Override
 		public void endVisit(ArrayAccess node) {
-			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> beforeTuple = flowAnalysis.getResultsBefore(node);
+			PairLatticeElement beforeTuple = flowAnalysis.getResultsBefore(node);
 			
 			checkIndex(beforeTuple, node.getArray(), node.getIndex());
-		}
-
-		@Override
-		public void endVisit(FieldAccess node) {
-			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> beforeTuple = flowAnalysis.getResultsBefore(node);
-		}
-		
-		@Override
-		public void endVisit(MethodInvocation node) {
-			TupleLatticeElement<Variable, ArrayBoundsLatticeElement> beforeTuple = flowAnalysis.getResultsBefore(node);
-			
 		}
 
 		@Override
@@ -113,14 +102,8 @@ public class ArrayBoundsAnalysis extends AbstractCrystalMethodAnalysis {
 			//To check for this, see what the binding is.
 			if (node.resolveBinding() instanceof IVariableBinding) {
 				//now we know it's field access.
-				TupleLatticeElement<Variable, ArrayBoundsLatticeElement> beforeTuple = flowAnalysis.getResultsBefore(node);				
+				PairLatticeElement beforeTuple = flowAnalysis.getResultsBefore(node);				
 			}
-		}
-		
-		@Override
-		public void endVisit(Assignment node) {
-			Expression left = node.getLeftHandSide();
-			Expression right = node.getRightHandSide();
 		}
 	}
 }
