@@ -58,7 +58,7 @@ AbstractTACBranchSensitiveTransferFunction<PairLatticeElement> {
 			if (paramVar.resolveType().isArray()) 				
 				def.arrayLenghts.put(paramVar, new HashSet<Variable>());
 
-			def.values.put(paramVar, Interval.empty());
+			def.values.put(paramVar, Interval.all());
 		}
 
 		return def;
@@ -118,7 +118,8 @@ AbstractTACBranchSensitiveTransferFunction<PairLatticeElement> {
 		case REL_GT:
 		case REL_GEQ:
 		case REL_LEQ:
-			 outs = Interval.getIntervals(instr.getOperator(), izq,der);
+			izq = Interval.all();
+			outs = Interval.getIntervals(instr.getOperator(), izq,der);
 			break;
 		}
 
@@ -128,9 +129,9 @@ AbstractTACBranchSensitiveTransferFunction<PairLatticeElement> {
 			PairLatticeElement valueTrue = ops.copy(value);
 			PairLatticeElement valueFalse = ops.copy(value);
 			valueTrue.values.put(instr.getOperand1(), outs[0]);
-			valueTrue.values.put(instr.getOperand2(), outs[1]);
+			//valueTrue.values.put(instr.getOperand2(), outs[1]);
 			valueFalse.values.put(instr.getOperand1(), outs[2]);
-			valueFalse.values.put(instr.getOperand2(), outs[3]);
+			//valueFalse.values.put(instr.getOperand2(), outs[3]);
 			ret.put(BooleanLabel.getBooleanLabel(true), valueTrue);
 			ret.put(BooleanLabel.getBooleanLabel(false), valueFalse);
 			return ret;
