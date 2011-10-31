@@ -9,27 +9,27 @@ import edu.cmu.cs.crystal.simple.SimpleLatticeOperations;
  * @author ciera
  *
  */
-public class ArrayBoundsLatticeOperations extends SimpleLatticeOperations<ArrayBoundsLatticeElement> {
+public class ArrayBoundsLatticeOperations extends SimpleLatticeOperations<Interval> {
 
 	@Override
-	public boolean atLeastAsPrecise(ArrayBoundsLatticeElement left,
-			ArrayBoundsLatticeElement right) {
+	public boolean atLeastAsPrecise(Interval left,
+			Interval right) {
 		return right.contains(left);
 	}
 
 	@Override
-	public ArrayBoundsLatticeElement bottom() {
-		return ArrayBoundsLatticeElement.bottom();
+	public Interval bottom() {
+		return Interval.empty();
 	}
 
 	@Override
-	public ArrayBoundsLatticeElement copy(ArrayBoundsLatticeElement original) {
+	public Interval copy(Interval original) {
 		return original.clone();
 	}
 
 	@Override
-	public ArrayBoundsLatticeElement join(ArrayBoundsLatticeElement left,
-			ArrayBoundsLatticeElement right) {
+	public Interval join(Interval left,
+			Interval right) {
 			return left.merge(right);
 	}
 

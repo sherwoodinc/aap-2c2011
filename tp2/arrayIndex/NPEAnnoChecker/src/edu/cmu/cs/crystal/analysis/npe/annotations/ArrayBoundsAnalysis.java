@@ -28,6 +28,7 @@ import org.eclipse.jdt.core.dom.QualifiedName;
 
 import edu.cmu.cs.crystal.AbstractCrystalMethodAnalysis;
 import edu.cmu.cs.crystal.IAnalysisReporter.SEVERITY;
+import edu.cmu.cs.crystal.analysis.npe.annotations.Interval.Limit;
 import edu.cmu.cs.crystal.tac.TACFlowAnalysis;
 import edu.cmu.cs.crystal.tac.model.Variable;
 
@@ -65,26 +66,36 @@ public class ArrayBoundsAnalysis extends AbstractCrystalMethodAnalysis {
 		private void checkIndex(PairLatticeElement tuple, Expression array, Expression index){
 			Variable varArray = flowAnalysis.getVariable(array);
 			Variable varIndex = flowAnalysis.getVariable(index);
-			ArrayBoundsLatticeElement elementIndex = tuple.values.get(varIndex);
+			Interval elementIndex = tuple.values.get(varIndex);
+			Interval negs = new Interval(-1,-1);
+			negs.lmin = Limit.NINF;
 			
 			System.out.println(elementIndex.toString() + " in "+ varArray.toString());
+			
+			if( negs.contains(elementIndex))
+				getReporter().reportUserProblem("Array index '"+ index +"' is out of bounds in "+ array, index, getName(), SEVERITY.ERROR);
+			else if (negs.overlaps(elementIndex))
+				getReporter().reportUserProblem("Array index '"+ index +"' may be out of bounds in "+ array, index, getName(), SEVERITY.WARNING);
 
 			if (tuple.arrayLenghts.containsKey(varArray))
 			{
 				if (tuple.arrayLenghts.get(varArray).isEmpty())
 				{
-					getReporter().reportUserProblem("Array index '"+ index +"' may be out of bound in "+ array, index, getName(), SEVERITY.WARNING);
+					// longitud desconocida
+					getReporter().reportUserProblem("Array index '"+ index +"' may be out of bounds in "+ array, index, getName(), SEVERITY.WARNING);
 					return;
 				}
 				for (Variable v: tuple.arrayLenghts.get(varArray))
 				{				
-					
-					if( ! tuple.values.get(v).contains(elementIndex) ) 
-						getReporter().reportUserProblem("Array index '"+ index +"' may be out of bound in "+ array, index, getName(), SEVERITY.WARNING);
+					Interval arr = tuple.values.get(v);
+					if( arr.contains(elementIndex)) 
+						getReporter().reportUserProblem("Array index '"+ index +"' is out of bounds in "+ array, index, getName(), SEVERITY.ERROR);
+					else if( arr.overlaps(elementIndex))
+						getReporter().reportUserProblem("Array index '"+ index +"' may be out of bounds in "+ array, index, getName(), SEVERITY.WARNING);
 				}
 			}
 			else
-				if( ! tuple.values.get(varArray).contains(elementIndex) ) 
+				if( tuple.values.get(varArray).overlaps(elementIndex) || elementIndex.overlaps(negs) ) 
 					getReporter().reportUserProblem("Array index '"+ index +"' may be out of bound in "+ array, index, getName(), SEVERITY.WARNING);
 				
 		}

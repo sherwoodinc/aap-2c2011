@@ -8,6 +8,7 @@ import java.util.Set;
 import javax.xml.validation.Validator;
 
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ForStatement;
 
 import edu.cmu.cs.crystal.flow.IAbstractLatticeOperations;
 import edu.cmu.cs.crystal.flow.ILatticeOperations;
@@ -16,11 +17,12 @@ import edu.cmu.cs.crystal.tac.model.Variable;
 
 public class PairLatticeOperations implements IAbstractLatticeOperations<PairLatticeElement, ASTNode>, ILatticeOperations<PairLatticeElement> {
 	
-	TupleLatticeOperations<Variable, ArrayBoundsLatticeElement> ops = new TupleLatticeOperations<Variable, ArrayBoundsLatticeElement>(new ArrayBoundsLatticeOperations(), ArrayBoundsLatticeElement.bottom());
+	TupleLatticeOperations<Variable, Interval> ops = new TupleLatticeOperations<Variable, Interval>(new ArrayBoundsLatticeOperations(), Interval.empty());
 	
 	public boolean atLeastAsPrecise(PairLatticeElement arg0,
 			PairLatticeElement arg1, ASTNode arg2) {
-		return ops.atLeastAsPrecise(arg0.values, arg1.values, arg2);		
+		boolean result = ops.atLeastAsPrecise(arg0.values, arg1.values, arg2);
+		return result;
 	}
 
 	public PairLatticeElement bottom() {
