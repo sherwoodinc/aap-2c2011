@@ -7,6 +7,6 @@ import edu.cmu.cs.crystal.simple.TupleLatticeElement;
 import edu.cmu.cs.crystal.tac.model.Variable;
 
 public class PairLatticeElement {
-	TupleLatticeElement<Variable, ArrayBoundsLatticeElement> values;
+	TupleLatticeElement<Variable, Interval> values;
 	Map<Variable, Set<Variable> > arrayLenghts;
 }
