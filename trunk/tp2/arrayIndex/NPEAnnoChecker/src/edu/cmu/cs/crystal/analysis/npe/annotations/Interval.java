@@ -10,8 +10,10 @@ public class Interval {
 		
 	public enum Limit { VAL, NINF, PINF }
 		
-	public int min, max;
-	public Limit lmin, lmax;
+	private int min, max;
+	private Limit lmin, lmax;
+
+	/// Constructores
 	
 	public static Interval empty()	{
 		Interval ret = new Interval(Integer.MAX_VALUE,Integer.MIN_VALUE);
@@ -26,12 +28,47 @@ public class Interval {
 		ret.lmax = Limit.PINF;
 		return ret;		
 	}
+	
+	public static Interval upTo(int Max)	{
+		Interval ret = new Interval(Integer.MIN_VALUE,Max);
+		ret.lmin = Limit.NINF;
+		return ret;		
+	}
+
+	public static Interval from(int Min)	{
+		Interval ret = new Interval(Min,Integer.MAX_VALUE);
+		ret.lmax = Limit.PINF;
+		return ret;		
+	}
 
 	public Interval(int Min, int Max) {
-		min = Min;
-		max = Max;
+		if (Min <= Max) {
+			min = Min;
+			max = Max;
+		}
+		else {
+			min = Max;
+			max = Min;			
+		}
 		lmin = lmax = Limit.VAL;
 	}
+
+	public Interval clone() {
+		Interval ret = new Interval(min,max);
+		ret.lmin = lmin;
+		ret.lmax = lmax;
+		return ret;
+	}
+	
+	public void assign(Interval other)
+	{
+		min = other.min;
+		max = other.max;
+		lmin = other.lmin;
+		lmax = other.lmax;
+	}
+
+	/// Observadores
 	
 	public boolean isEmpty() {
 		return lmin == Limit.PINF && lmax == Limit.NINF; 
@@ -63,7 +100,23 @@ public class Interval {
 		return leftIncludes(other) || rightIncludes(other);
 	}
 	
+	public boolean equals(Interval other) {
+		return this.contains(other) && other.contains(this);	
+	}
+
+	public String toString(){
+		if (isEmpty())
+			return "[]";
+		
+		return "[ "+
+		(lmin == Limit.VAL? min : "-INF") + " , " + 
+		(lmax == Limit.VAL? max : "INF" ) + " ]";
+	}
+
+	/// Operaciones algebraicas y de conjuntos
+	
 	// Diferencia de intervalos (A - A interseccion B)
+	// Si el resultado son dos intervalos, devuelvo uno de los dos
 	public Interval difference(Interval other)
 	{
 		if (other.contains(this))
@@ -73,16 +126,21 @@ public class Interval {
 		if (intsec.isEmpty())
 			return clone();
 		
-		Interval ret = clone();
-		return ret;
+		if (!intsec.get_LT().isEmpty())
+			return intsec.get_LT();
+
+		if (!intsec.get_GT().isEmpty())
+			return intsec.get_GT();
+		
+		return empty();
 	}	
 
 	// Intersección de intervalos
 	public Interval intersect(Interval other)
 	{
-		if (isEmpty() || other.isEmpty())
+		if (isEmpty() || other.isEmpty() || !overlaps(other))
 			return empty();
-		
+				
 		Interval ret = new Interval(Math.max(min, other.min), Math.min(max, other.max));
 		ret.lmin = lmin == Limit.NINF && other.lmin == Limit.NINF ? Limit.NINF : Limit.VAL;
 		ret.lmax = lmax == Limit.PINF && other.lmax == Limit.PINF ? Limit.PINF : Limit.VAL;
@@ -163,35 +221,18 @@ public class Interval {
 		
 		return ret;
 	}
-
-	public boolean equals(Interval other) {
-		return this.contains(other) && other.contains(this);	
-	}
-	
-	public Interval clone() {
-		Interval ret = new Interval(min,max);
-		ret.lmin = lmin;
-		ret.lmax = lmax;
+		
+	public Interval negate() {
+		if (isAll() || isEmpty())
+			return clone();
+		
+		Interval ret = new Interval(-max, -min);
+		if (lmin == Limit.NINF) ret.lmax = Limit.PINF;
+		if (lmax == Limit.PINF) ret.lmin = Limit.NINF;
+		
 		return ret;
 	}
-	
-	public String toString(){
-		if (isEmpty())
-			return "[]";
-		
-		return "[ "+
-		(lmin == Limit.VAL? min : "-INF") + " , " + 
-		(lmax == Limit.VAL? max : "INF" ) + " ]";
-	}
 
-	public void assign(Interval other)
-	{
-		min = other.min;
-		max = other.max;
-		lmin = other.lmin;
-		lmax = other.lmax;
-	}
-	
 	public static Interval[] getIntervals(BinaryOperator op, Interval op0, Interval op1)
 	{	
 		// out 0-1 son los intervalos resultantes cuando la comparación es true
@@ -245,29 +286,23 @@ public class Interval {
 				break;
 				
 			case REL_GEQ:
-				out0.assign(op0.intersect(op1));
-				out0.lmax = Limit.PINF;
-				out1.assign(op1);
+				out0.assign(op0.intersect(op1.merge(op1.get_GT())));
+				out1.assign(op1.intersect(op0.get_LT()));
 				break;
 
 			case REL_LEQ:
-				out0.assign(op0.intersect(op1));
-				out0.lmin = Limit.NINF;
-				out1.assign(op1);
+				out0.assign(op0.intersect(op1.merge(op1.get_LT())));
+				out1.assign(op1.intersect(op0.get_GT()));
 				break;
 
 			case REL_GT:
-				out0.assign(op1);
-				out0.lmax = Limit.PINF;
-				out0.min += 1;
-				out1.assign(op1);
+				out0.assign(op0.intersect(op1.get_GT()));
+				out1.assign(op1.intersect(op0.merge(op0.get_LT())));
 				break;
 
 			case REL_LT:
-				out0.assign(op1);
-				out0.lmin = Limit.NINF;
-				out0.max -= 1;
-				out1.assign(op1);
+				out0.assign(op0.intersect(op1.get_LT()));
+				out1.assign(op1.intersect(op0.merge(op0.get_GT())));
 				break;
 		}
 		
@@ -302,16 +337,24 @@ public class Interval {
 		// Both are defined intervals
 		return other.min >= min && (lmax == Limit.PINF || other.min <= max);	}
 
+	private Interval get_LT() {
+		if (isEmpty())
+			return all();
+		
+		if (isAll() || lmin == Limit.NINF)
+			return empty();
+	
+		return upTo(min-1);		
+	}
 
-	public Interval negate() {
-		if (isAll() || isEmpty())
-			return clone();
+	private Interval get_GT() {
+		if (isEmpty())
+			return all();
 		
-		Interval ret = new Interval(-max, -min);
-		if (lmin == Limit.NINF) ret.lmax = Limit.PINF;
-		if (lmax == Limit.PINF) ret.lmin = Limit.NINF;
-		
-		return ret;
+		if (isAll() || lmax == Limit.PINF)
+			return empty();
+	
+		return from(max+1);		
 	}
 
 };

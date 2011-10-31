@@ -33,15 +33,17 @@ import edu.cmu.cs.crystal.tac.TACFlowAnalysis;
 import edu.cmu.cs.crystal.tac.model.Variable;
 
 /**
- * A simple flow analysis. This analysis is almost identical to @link{edu.cmu.cs.crystal.analysis.npe.simpleflow.SimpleNPEAnalysis},
- * the only difference is it uses a transfer function that is aware of annotations, and now the visitor will check that
- * parameters to method calls are safe and it will check assignments into fields and parameters which may be non-null.
+ * A simple flow analysis. This analysis is almost identical to
+ * @link{edu.cmu.cs.crystal.analysis.npe.simpleflow.SimpleNPEAnalysis}, the only
+ * difference is it uses a transfer function that is aware of annotations, and
+ * now the visitor will check that parameters to method calls are safe and it
+ * will check assignments into fields and parameters which may be non-null.
  * 
  * @author ciera
  */
 public class ArrayBoundsAnalysis extends AbstractCrystalMethodAnalysis {
 	public static final String NON_NULL_ANNO = "edu.cmu.cs.crystal.annos.NonNull";
-	
+
 	TACFlowAnalysis<PairLatticeElement> flowAnalysis;
 
 	@Override
@@ -53,67 +55,91 @@ public class ArrayBoundsAnalysis extends AbstractCrystalMethodAnalysis {
 	public void analyzeMethod(MethodDeclaration d) {
 		ArrayBoundsTransferFunction tf = new ArrayBoundsTransferFunction();
 		flowAnalysis = new TACFlowAnalysis<PairLatticeElement>(tf, getInput());
-		
+
 		d.accept(new ArrayFlowVisitor());
 	}
 
 	/**
 	 * The visitor for the analysis.
+	 * 
 	 * @author ciera
 	 */
 	public class ArrayFlowVisitor extends ASTVisitor {
-		
-		private void checkIndex(PairLatticeElement tuple, Expression array, Expression index){
+
+		private void checkIndex(PairLatticeElement tuple, Expression array,
+				Expression index) {
 			Variable varArray = flowAnalysis.getVariable(array);
 			Variable varIndex = flowAnalysis.getVariable(index);
 			Interval elementIndex = tuple.values.get(varIndex);
-			Interval negs = new Interval(-1,-1);
-			negs.lmin = Limit.NINF;
-			
-			System.out.println(elementIndex.toString() + " in "+ varArray.toString());
-			
-			if( negs.contains(elementIndex))
-				getReporter().reportUserProblem("Array index '"+ index +"' is out of bounds in "+ array, index, getName(), SEVERITY.ERROR);
-			else if (negs.overlaps(elementIndex))
-				getReporter().reportUserProblem("Array index '"+ index +"' may be out of bounds in "+ array, index, getName(), SEVERITY.WARNING);
+			Interval negs = Interval.upTo(-1);
 
-			if (tuple.arrayLenghts.containsKey(varArray))
-			{
-				if (tuple.arrayLenghts.get(varArray).isEmpty())
-				{
-					// longitud desconocida
-					getReporter().reportUserProblem("Array index '"+ index +"' may be out of bounds in "+ array, index, getName(), SEVERITY.WARNING);
-					return;
-				}
-				for (Variable v: tuple.arrayLenghts.get(varArray))
-				{				
-					Interval arr = tuple.values.get(v);
-					if( arr.contains(elementIndex)) 
-						getReporter().reportUserProblem("Array index '"+ index +"' is out of bounds in "+ array, index, getName(), SEVERITY.ERROR);
-					else if( arr.overlaps(elementIndex))
-						getReporter().reportUserProblem("Array index '"+ index +"' may be out of bounds in "+ array, index, getName(), SEVERITY.WARNING);
+			System.out.println(elementIndex.toString() + " in "
+					+ varArray.toString());
+
+			if (!checkAndReport(array, index, elementIndex, negs)) {
+				if (tuple.arrayLenghts.containsKey(varArray)) {
+					if (tuple.arrayLenghts.get(varArray).isEmpty()) {
+						reportWarning(array, index);
+						return;
+					}
+					for (Variable v : tuple.arrayLenghts.get(varArray)) {
+						Interval arr = tuple.values.get(v);
+						checkAndReport(array, index, elementIndex, arr);
+					}
+				} else {
+					Interval arr = tuple.values.get(varArray);
+					checkAndReport(array, index, elementIndex, arr);
 				}
 			}
-			else
-				if( tuple.values.get(varArray).overlaps(elementIndex) || elementIndex.overlaps(negs) ) 
-					getReporter().reportUserProblem("Array index '"+ index +"' may be out of bound in "+ array, index, getName(), SEVERITY.WARNING);
-				
+
+		}
+
+		private boolean checkAndReport(Expression array, Expression index,
+				Interval elementIndex, Interval arr) {
+			if (arr.contains(elementIndex))
+			{
+				reportError(array, index);
+				return true;
+			}
+			else if (arr.overlaps(elementIndex))
+			{
+				reportWarning(array, index);
+				return true;
+			}
+			return false;
+		}
+
+		private void reportError(Expression array, Expression index) {
+			getReporter().reportUserProblem(
+					"Array index '" + index
+							+ "' is out of bounds in " + array,
+					index, getName(), SEVERITY.ERROR);
+		}
+
+		private void reportWarning(Expression array, Expression index) {
+			getReporter().reportUserProblem(
+					"Array index '" + index
+							+ "' may be out of bounds in " + array,
+					index, getName(), SEVERITY.WARNING);
 		}
 
 		@Override
 		public void endVisit(ArrayAccess node) {
-			PairLatticeElement beforeTuple = flowAnalysis.getResultsBefore(node);
-			
+			PairLatticeElement beforeTuple = flowAnalysis
+					.getResultsBefore(node);
+
 			checkIndex(beforeTuple, node.getArray(), node.getIndex());
 		}
 
 		@Override
 		public void endVisit(QualifiedName node) {
-			//Due to an ambiguity within the parser, a qualified name may actually be a FieldAccess.
-			//To check for this, see what the binding is.
+			// Due to an ambiguity within the parser, a qualified name may
+			// actually be a FieldAccess.
+			// To check for this, see what the binding is.
 			if (node.resolveBinding() instanceof IVariableBinding) {
-				//now we know it's field access.
-				PairLatticeElement beforeTuple = flowAnalysis.getResultsBefore(node);				
+				// now we know it's field access.
+				PairLatticeElement beforeTuple = flowAnalysis
+						.getResultsBefore(node);
 			}
 		}
 	}
