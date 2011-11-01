@@ -8,20 +8,16 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 
-import edu.cmu.cs.crystal.analysis.npe.annotations.Interval.Limit;
-import edu.cmu.cs.crystal.cfg.eclipse.Label;
 import edu.cmu.cs.crystal.flow.BooleanLabel;
 import edu.cmu.cs.crystal.flow.ILabel;
 import edu.cmu.cs.crystal.flow.ILatticeOperations;
 import edu.cmu.cs.crystal.flow.IResult;
 import edu.cmu.cs.crystal.flow.LabeledResult;
 import edu.cmu.cs.crystal.flow.LabeledSingleResult;
-import edu.cmu.cs.crystal.flow.SingleResult;
 import edu.cmu.cs.crystal.tac.AbstractTACBranchSensitiveTransferFunction;
 import edu.cmu.cs.crystal.tac.model.ArrayInitInstruction;
 import edu.cmu.cs.crystal.tac.model.BinaryOperation;
 import edu.cmu.cs.crystal.tac.model.CopyInstruction;
-import edu.cmu.cs.crystal.tac.model.EnhancedForConditionInstruction;
 import edu.cmu.cs.crystal.tac.model.LoadFieldInstruction;
 import edu.cmu.cs.crystal.tac.model.LoadLiteralInstruction;
 import edu.cmu.cs.crystal.tac.model.NewArrayInstruction;
@@ -91,8 +87,8 @@ AbstractTACBranchSensitiveTransferFunction<PairLatticeElement> {
 	@Override
 	public IResult<PairLatticeElement> transfer(BinaryOperation instr,
 			List<ILabel> labels, PairLatticeElement value) {
-		System.out.println("BinOp: " + instr.getOperator() + " "
-				+ instr.getOperand1() + " " + instr.getOperand2());
+		System.out.println("BinOp: " + instr.getTarget() + " = "
+				+ instr.getOperand1() + " " + instr.getOperator() + " " + instr.getOperand2());
 		Interval res = Interval.all();
 		Interval izq = value.values.get(instr.getOperand1())
 				.clone();
@@ -142,7 +138,7 @@ AbstractTACBranchSensitiveTransferFunction<PairLatticeElement> {
 
 	public IResult<PairLatticeElement> transfer(UnaryOperation instr,
 			List<ILabel> labels, PairLatticeElement value) {
-		System.out.println("UnOp: " + instr.getOperator() + " "
+		System.out.println("UnOp: " + instr.getTarget() + " = " + instr.getOperator() + " "
 				+ instr.getOperand());
 		Interval op = value.values.get(instr.getOperand());
 		switch (instr.getOperator())
@@ -170,6 +166,9 @@ AbstractTACBranchSensitiveTransferFunction<PairLatticeElement> {
 	@Override
 	public IResult<PairLatticeElement> transfer(CopyInstruction instr,
 			List<ILabel> labels, PairLatticeElement value) {
+		
+		System.out.println("CopyOp: " + instr.getTarget() + " = "+ instr.getOperand());
+
 		cleanVariable(instr.getTarget(), value);
 		value.values.put(instr.getTarget(),
 				value.values.get(instr.getOperand()));
@@ -187,6 +186,8 @@ AbstractTACBranchSensitiveTransferFunction<PairLatticeElement> {
 	@Override
 	public IResult<PairLatticeElement> transfer(LoadLiteralInstruction instr,
 			List<ILabel> labels, PairLatticeElement value) {
+		
+		System.out.println("LoadLitOp: " + instr.getTarget() + " = "+ instr.getLiteral());
 
 		if (instr.isNumber() && instr.getLiteral() instanceof java.lang.String) {
 			int index = Integer.parseInt((String) instr.getLiteral());
