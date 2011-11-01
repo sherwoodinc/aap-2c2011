@@ -97,7 +97,7 @@ public class Interval {
 		if (other.isEmpty())
 			return true;			
 		
-		return leftIncludes(other) || rightIncludes(other);
+		return leftIncludes(other) || rightIncludes(other) || other.rightIncludes(this) || other.leftIncludes(this);
 	}
 	
 	public boolean equals(Interval other) {
@@ -355,6 +355,16 @@ public class Interval {
 			return empty();
 	
 		return from(max+1);		
+	}
+
+	public Interval widen(Interval i2) {
+		Interval res = clone();
+		if (min < i2.min && max < i2.max)
+			res.lmax = Limit.PINF;
+		else if (min > i2.min && max > i2.max)
+			res.lmin = Limit.NINF;
+		
+		return res;
 	}
 
 };
