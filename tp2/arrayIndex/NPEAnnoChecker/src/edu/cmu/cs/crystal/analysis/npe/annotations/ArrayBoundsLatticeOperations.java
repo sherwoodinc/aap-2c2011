@@ -3,11 +3,8 @@ package edu.cmu.cs.crystal.analysis.npe.annotations;
 import edu.cmu.cs.crystal.simple.SimpleLatticeOperations;
 
 /**
- * The lattice operations for a null lattice. As NullLatticeElement is an enum,
- * we can directly compare references and do not need to clone anything.
- * 
- * @author ciera
- *
+ * Operaciones del reticulado entre intervalos.
+ * El grueso de las operaciones entre intervalos está implementado en la clase Interval.
  */
 public class ArrayBoundsLatticeOperations extends SimpleLatticeOperations<Interval> {
 
