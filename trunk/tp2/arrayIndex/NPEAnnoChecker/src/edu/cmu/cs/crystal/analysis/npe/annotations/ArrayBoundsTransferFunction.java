@@ -26,21 +26,15 @@ import edu.cmu.cs.crystal.tac.model.Variable;
 
 public class ArrayBoundsTransferFunction extends
 AbstractTACBranchSensitiveTransferFunction<PairLatticeElement> {
-	/**
-	 * The operations for this lattice. We want to have a tuple lattice from
-	 * variables to null lattice elements, so we give it an instance of
-	 * NullLatticeOperations. We also want the default value to be maybe null.
-	 */
+
 	PairLatticeOperations ops = new PairLatticeOperations();
 
 	public ArrayBoundsTransferFunction() {
 	}
 
 	/**
-	 * The operations will create a default lattice which will map all variables
-	 * to maybe null (since that was our default).
+	 * Todas las variables comienzan valiendo Top ([-inf,inf])
 	 * 
-	 * Of course, "this" should never be null.
 	 */
 	public PairLatticeElement createEntryValue(MethodDeclaration method) {
 		PairLatticeElement def = ops.getDefault();
@@ -60,9 +54,6 @@ AbstractTACBranchSensitiveTransferFunction<PairLatticeElement> {
 		return def;
 	}
 
-	/**
-	 * Just return our lattice ops.
-	 */
 	public ILatticeOperations<PairLatticeElement> getLatticeOperations() {
 		return ops;
 	}
@@ -118,6 +109,8 @@ AbstractTACBranchSensitiveTransferFunction<PairLatticeElement> {
 			break;
 		}
 
+		// Estamos asumiendo fuertemente que sólo hay más de un label en caso de un 
+		// operador relacional.
 		if (labels.size() > 1) {
 			LabeledResult<PairLatticeElement> ret = LabeledResult.createResult(
 					labels, value);
@@ -142,7 +135,7 @@ AbstractTACBranchSensitiveTransferFunction<PairLatticeElement> {
 				+ instr.getOperand());
 		Interval op = value.values.get(instr.getOperand());
 		switch (instr.getOperator())
-		{
+		{ 
 		case ARIT_MINUS:
 			value.values.put(instr.getTarget(), op.negate());
 			break;				
@@ -175,6 +168,7 @@ AbstractTACBranchSensitiveTransferFunction<PairLatticeElement> {
 		return LabeledSingleResult.createResult(value, labels);
 	}
 
+	
 	private void cleanVariable(Variable target, PairLatticeElement value) {
 		for (Map.Entry<Variable, Set<Variable>> entry : value.arrayLenghts
 				.entrySet()) {

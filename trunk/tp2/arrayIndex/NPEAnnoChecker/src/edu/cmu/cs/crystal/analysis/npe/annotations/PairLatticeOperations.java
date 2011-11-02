@@ -17,6 +17,9 @@ import edu.cmu.cs.crystal.simple.TupleLatticeElement;
 import edu.cmu.cs.crystal.simple.TupleLatticeOperations;
 import edu.cmu.cs.crystal.tac.model.Variable;
 
+/*
+ * Extensión de TupleLatticeElement para guardar un par de maps extra con info necesaria. 
+ */
 public class PairLatticeOperations implements IAbstractLatticeOperations<PairLatticeElement, ASTNode>, ILatticeOperations<PairLatticeElement> {
 	
 	TupleLatticeOperations<Variable, Interval> ops = new TupleLatticeOperations<Variable, Interval>(new ArrayBoundsLatticeOperations(), Interval.empty());
@@ -53,6 +56,8 @@ public class PairLatticeOperations implements IAbstractLatticeOperations<PairLat
 		p.arrayLenghts.putAll(arg0.arrayLenghts);
 		p.arrayLenghts.putAll(arg1.arrayLenghts);
 		p.values = ops.join(arg0.values, arg1.values, arg2);
+		
+		// Acá comprobamos si hacer widening o no.
 		if (arg2 instanceof ForStatement || arg2 instanceof WhileStatement) {
 			if (!iterCounts.containsKey(arg2))
 				iterCounts.put(arg2, 1);

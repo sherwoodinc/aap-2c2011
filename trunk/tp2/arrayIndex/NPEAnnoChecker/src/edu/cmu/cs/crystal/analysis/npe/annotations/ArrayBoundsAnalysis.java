@@ -33,22 +33,15 @@ import edu.cmu.cs.crystal.tac.TACFlowAnalysis;
 import edu.cmu.cs.crystal.tac.model.Variable;
 
 /**
- * A simple flow analysis. This analysis is almost identical to
- * @link{edu.cmu.cs.crystal.analysis.npe.simpleflow.SimpleNPEAnalysis}, the only
- * difference is it uses a transfer function that is aware of annotations, and
- * now the visitor will check that parameters to method calls are safe and it
- * will check assignments into fields and parameters which may be non-null.
- * 
- * @author ciera
+ * Chequeo de accesos a array.
  */
 public class ArrayBoundsAnalysis extends AbstractCrystalMethodAnalysis {
-	public static final String NON_NULL_ANNO = "edu.cmu.cs.crystal.annos.NonNull";
 
 	TACFlowAnalysis<PairLatticeElement> flowAnalysis;
 
 	@Override
 	public String getName() {
-		return "Array Bounds Checker";
+		return "AAP Array Checker";
 	}
 
 	@Override
@@ -60,9 +53,7 @@ public class ArrayBoundsAnalysis extends AbstractCrystalMethodAnalysis {
 	}
 
 	/**
-	 * The visitor for the analysis.
-	 * 
-	 * @author ciera
+	 * Visitor para el análisis, sólo se preocupa por instrucciones ArrayAccess.
 	 */
 	public class ArrayFlowVisitor extends ASTVisitor {
 
@@ -76,6 +67,7 @@ public class ArrayBoundsAnalysis extends AbstractCrystalMethodAnalysis {
 			System.out.println(elementIndex.toString() + " in "
 					+ varArray.toString());
 
+			// Primero comprobamos los negativos y luego contra las longitudes posibles del array.
 			if (!checkAndReport(array, index, elementIndex, negs)) {
 				if (tuple.arrayLenghts.containsKey(varArray)) {
 					if (tuple.arrayLenghts.get(varArray).isEmpty()) {
@@ -96,6 +88,7 @@ public class ArrayBoundsAnalysis extends AbstractCrystalMethodAnalysis {
 
 		private boolean checkAndReport(Expression array, Expression index,
 				Interval elementIndex, Interval arr) {
+			// Acá se implementa la lógica de decidir entre warning y error en un acceso a array.
 			if (arr.contains(elementIndex))
 			{
 				reportError(array, index);
@@ -129,18 +122,6 @@ public class ArrayBoundsAnalysis extends AbstractCrystalMethodAnalysis {
 					.getResultsBefore(node);
 
 			checkIndex(beforeTuple, node.getArray(), node.getIndex());
-		}
-
-		@Override
-		public void endVisit(QualifiedName node) {
-			// Due to an ambiguity within the parser, a qualified name may
-			// actually be a FieldAccess.
-			// To check for this, see what the binding is.
-			if (node.resolveBinding() instanceof IVariableBinding) {
-				// now we know it's field access.
-				PairLatticeElement beforeTuple = flowAnalysis
-						.getResultsBefore(node);
-			}
 		}
 	}
 }
