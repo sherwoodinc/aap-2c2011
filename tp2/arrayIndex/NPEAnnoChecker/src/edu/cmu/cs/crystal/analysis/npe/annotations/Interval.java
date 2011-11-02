@@ -4,7 +4,7 @@ import edu.cmu.cs.crystal.tac.model.BinaryOperator;
 
 
 /**
- *
+ * Clase que representa 
  */
 public class Interval {
 		
