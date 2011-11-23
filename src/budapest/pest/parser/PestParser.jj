@@ -1,0 +1,818 @@
+/**
+* Pest parser
+*/
+
+options {
+	JDK_VERSION = "1.5";
+	STATIC = false;
+}
+ 
+PARSER_BEGIN(PestParser)
+package budapest.pest.parser;
+
+import budapest.pest.ast.params.*;
+import budapest.pest.ast.proc.*;
+import budapest.pest.ast.exp.*;
+import budapest.pest.ast.pred.*;
+import budapest.pest.ast.pred.trm.*;
+import budapest.pest.ast.stmt.*;
+
+import budapest.pest.ast.Type;
+
+import java.util.*;
+
+public final class PestParser {
+
+}
+PARSER_END(PestParser)
+
+SKIP :
+{
+	" "
+	| "\t"
+	| "\n"
+	| "\r"
+	| <"//" (~["\n","\r"])* ("\n"|"\r"|"\r\n")>
+	| <"/*" (~["*"])* "*" (~["/"] (~["*"])* "*")* "/">
+}
+
+TOKEN : /* LITERALS */
+{
+	< INTEGER_LITERAL: ["0"-"9"] (["0"-"9"])* > |
+
+	< TRUE: "true" > |
+	< FALSE: "false" > |
+
+	< LOCAL: "local" > |
+	< SKIP_T: "skip" > |
+
+	< IF: "if" > |
+	< THEN: "then" > |
+	< ELSE: "else" > |
+	
+	< WHILE: "while" > |
+	< DO: "do" > |
+	
+	< FIND: "find" > |
+	< FIRST: "first" > |
+	< LAST: "last" > |
+	< MAP: "map" > |
+	< IN: "in" > |
+	< FOR: "for" > |
+		
+	< FORALL: "forall" > |
+	< EXISTS: "exists" > |
+	< FROM: "from" > |
+	< TO: "to" >
+}
+
+TOKEN : /* IDENTIFIERS */
+{
+	< IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>)* >
+	| < #LETTER: ["_","a"-"z","A"-"Z"] >
+	| < #DIGIT: ["0"-"9"] >
+}
+
+Program Program() :
+{
+	int line, column;
+	Procedure proc;
+	List<Procedure> procs = new ArrayList<Procedure>();	
+}
+{
+	proc = Procedure()
+	{ line = proc.line; column = proc.column; }
+	{ procs.add(proc); }
+	
+	(
+		proc = Procedure()
+		{ procs.add(proc); }
+	)*	
+	
+	{ return new Program(line, column, procs); }
+}
+
+Procedure Procedure() :
+{
+	Token t;
+	List<FormalParam> params;
+	List<FormalParam> touches = new ArrayList<FormalParam>();
+	Pred pre, post;
+	Stmt stmt;
+}
+{
+	t = <IDENTIFIER>
+	"(" params = FormalParams() ")"
+	pre = Precondition()
+	post = Postcondition()
+	[ ":*" touches = FormalParams() ]
+	"{"
+		stmt = StmtList()
+	"}"
+	
+	{ return new Procedure(t.beginLine, t.beginColumn, t.image, 
+						params, pre, post, touches, stmt); }
+}
+
+List<FormalParam> FormalParams() : 
+{
+	List<FormalParam> ret = new ArrayList<FormalParam>();
+	FormalParam p;
+}
+{
+	[ 
+		p = FormalParam() { ret.add(p); }
+		( "," p = FormalParam() { ret.add(p); } )* 
+	]
+	
+	{ return ret; }
+}
+
+FormalParam FormalParam() :
+{
+	Token t;
+}
+{
+	t = <IDENTIFIER>
+	(
+		{ return new FormalParam(t.image, Type.INT); }
+	)
+}
+
+Stmt StmtList() :
+{
+	Stmt stmt;
+	Stmt ret;
+}
+{
+	(
+		(
+			ret = Stmt()
+			(
+				stmt = Stmt()
+				{ ret = new SeqStmt(-1, -1, ret, stmt); }
+			)*
+		)	
+	|
+		{ ret = new SkipStmt(-1, -1); }
+	)
+	{ return ret; }
+}
+
+Pred Precondition() :
+{
+	Pred ret = null;
+}
+{
+	":?" (ret = Pred())?
+	{ return ret; }
+}
+
+Pred Postcondition() :
+{
+	Pred ret = null;
+}
+{
+	":!" (ret = Pred())?
+	{ return ret; }
+}
+
+Pred Invariant() :
+{
+	Pred ret;
+}
+{
+	":?!" ret = Pred()
+	{ return ret; }
+}
+
+Trm Variant() : 
+{
+	Trm ret;
+}
+{
+	":#" ret = Trm()		
+	{ return ret; }
+}
+
+Stmt Stmt() : 
+{
+	Stmt ret;
+}
+{
+	(
+		LOOKAHEAD(2)
+		ret = CallStmt()
+	|
+		ret = IfStmt() 
+	|
+		ret = LoopStmt() 
+	|
+		ret = BlockStmt()
+	|
+		LOOKAHEAD(3)
+		ret = LocalDefStmt()
+	|
+		ret = AssignStmt() 
+	|
+		ret = AssumeStmt()
+	|
+		ret = AssertStmt()
+	|
+		ret = SkipStmt()
+	)
+	
+	{ return ret; }
+}
+
+CallStmt CallStmt() :
+{
+	Token t;
+	List<ConcreteParam> params;
+}
+{
+	t = <IDENTIFIER>
+	params = ConcreteParams()
+	{ return new CallStmt(t.beginLine, t.beginColumn, t.image, params); }	
+}
+
+List<ConcreteParam> ConcreteParams() : 
+{
+	List<ConcreteParam> ret = new ArrayList<ConcreteParam>();
+	ConcreteParam p;
+}
+{
+	"("
+		[ 
+			p = ConcreteParam() { ret.add(p); }
+			( "," p = ConcreteParam() { ret.add(p); } )* 
+		]
+	")"
+	
+	{ return ret; }
+}
+
+ConcreteParam ConcreteParam() :
+{
+	Exp e;
+	Token t;
+}
+{
+	e = Exp()
+	{ return new IntConcreteParam(e); }
+}
+
+BlockStmt BlockStmt() :
+{
+	Token t;
+	Stmt stmt;
+}
+{
+	t = "{"
+		stmt = StmtList()
+	"}"	
+	{ return new BlockStmt(t.beginLine, t.beginColumn, stmt); }
+}
+
+AssumeStmt AssumeStmt() : 
+{
+	Token t;
+	Pred hypothesis;	
+}
+{
+	t = ":@@@"
+	hypothesis = Pred()
+	{ return new AssumeStmt(t.beginLine, t.beginColumn, hypothesis); }
+}
+
+AssertStmt AssertStmt() : 
+{
+	Token t;
+	Pred query;	
+}
+{
+	t = ":!!!"
+	query = Pred()
+	{ return new AssertStmt(t.beginLine, t.beginColumn, query); }
+}
+
+AssignStmt AssignStmt() : 
+{
+	VarExp left;
+	Exp right;
+}
+{
+	left = VarExp() "<-" right = Exp()
+	
+	{ return new AssignStmt(left.line, left.column, left, right); }
+}
+
+IfStmt IfStmt() : 
+{
+	BoolExp condition;
+	Stmt thenS;
+	Stmt elseS;
+	Token t;
+}
+{
+	t = <IF> condition = BoolExp() <THEN>
+		thenS = Stmt()
+		(
+			<ELSE>
+			elseS = Stmt()
+		|
+			{ elseS = new SkipStmt(-1,-1); }	
+		)
+		
+	{ return new IfStmt(t.beginLine, t.beginColumn,
+				condition, thenS, elseS); }
+}
+
+LoopStmt LoopStmt() : 
+{
+	Pred invariant;
+	Trm variant;
+	Exp condition;
+	Stmt body;
+	Token t;
+}
+{
+	t = <WHILE> condition = Exp()
+		invariant = Invariant()
+		variant = Variant()
+		<DO> body = Stmt()
+		
+	{ return new LoopStmt(t.beginLine, t.beginColumn, condition, 
+		invariant, variant, body); }
+}
+
+LocalDefStmt LocalDefStmt() :
+{
+	VarExp left;
+	Exp right;
+	Token t;
+}
+{
+	t = <LOCAL>
+	
+	left = VarExp()
+	"<-"
+	right = Exp()
+	
+	{ return new LocalDefStmt(t.beginLine, t.beginColumn, left, right); }
+}
+
+SkipStmt SkipStmt() :
+{
+	Token t;
+}
+{
+	t = <SKIP_T>
+	{ return new SkipStmt(t.beginLine, t.beginColumn); }
+}
+
+Exp Exp() : 
+{
+	Exp ret;
+}
+{
+	(
+		LOOKAHEAD(BoolExp())
+		ret = BoolExp()
+	|
+		ret = TopExp()
+	)
+	{ return ret; }
+}
+
+BoolExp BoolExp() :
+{
+	BoolExp ret;
+}
+{
+	ret = OrExp()
+	{ return ret; }
+}
+
+BoolExp OrExp() :
+{
+	BoolExp ret, right;
+}
+{
+	ret = AndExp()
+	(
+		LOOKAHEAD(2)
+		"||" right = AndExp() 
+		{ ret = new BinBoolExp(ret.line, ret.column,
+					ret, BinBoolExp.Operator.OR, right); }
+	)*
+	
+	{ return ret; }
+}
+
+BoolExp AndExp() :
+{
+	BoolExp ret, right;	
+}
+{
+	ret = AtomBoolExp()
+	(
+		LOOKAHEAD(2)
+		"&&" right = AtomBoolExp() 
+		{ ret = new BinBoolExp(ret.line, ret.column,
+					ret, BinBoolExp.Operator.AND, right); }
+	)*
+	
+	{ return ret; }
+}
+
+BoolExp AtomBoolExp() :
+{
+	BoolExp e;
+	Token t;
+}
+{
+		t = "!" e = BoolExp()
+		{ return new NotBoolExp(t.beginLine, t.beginColumn, e); }
+	|
+		LOOKAHEAD(RelBoolExp())
+		e = RelBoolExp()
+		{ return e; }
+	|
+		"(" e = BoolExp() ")"
+		{ return e; }
+}
+
+RelBoolExp RelBoolExp() :
+{
+	TopExp left;
+	RelBoolExp.Operator op;
+	TopExp right;
+}
+{
+	left = TopExp() 
+	
+	(
+		"=" { op = RelBoolExp.Operator.EQ; }
+	|
+		"!=" { op = RelBoolExp.Operator.NEQ; }
+	|
+		"<=" { op = RelBoolExp.Operator.LE; }
+	|
+		"<" { op = RelBoolExp.Operator.LT; }
+	|
+		">=" { op = RelBoolExp.Operator.GE; }
+	|
+		">" { op = RelBoolExp.Operator.GT; }
+	)
+	
+	right = TopExp()
+		
+	{ return new RelBoolExp(left.line, left.column, 
+		left, op, right); }
+}
+
+TopExp TopExp() :
+{
+	TopExp ret;
+}
+{
+	ret = AdditiveTopExp()
+	{ return ret; }
+}
+
+TopExp AdditiveTopExp() :
+{
+	TopExp ret, right;
+}
+{
+	ret = MultiplicativeTopExp()
+	(
+		"+" right = MultiplicativeTopExp()
+		{ ret = new ArithTopExp(ret.line, ret.column,
+					ret, ArithTopExp.Operator.ADD, right); }
+	|
+		"-" right = MultiplicativeTopExp()
+		{ ret = new ArithTopExp(ret.line, ret.column,
+					ret, ArithTopExp.Operator.SUBS, right); }
+	)*
+	
+	{ return ret; }
+}
+
+TopExp MultiplicativeTopExp() :
+{
+	TopExp ret, right;
+}
+{
+	ret = AtomTopExp()
+	(
+		"*" right = AtomTopExp()
+		{ ret = new ArithTopExp(ret.line, ret.column,
+					ret, ArithTopExp.Operator.MUL, right); }
+	|
+		"/" right = AtomTopExp()
+		{ ret = new ArithTopExp(ret.line, ret.column,
+					ret, ArithTopExp.Operator.DIV, right); }
+	)*
+	
+	{ return ret; }
+}
+
+TopExp AtomTopExp() :
+{
+	TopExp e;
+	Token t;
+}
+{
+		t = "-" e = AtomTopExp()
+		{ return new NegTopExp(t.beginLine, t.beginColumn, e); }
+	|
+		LOOKAHEAD(2)
+		e = VarExp()
+		{ return e; }
+	|
+		t = <INTEGER_LITERAL>
+		{ return new LiteralIntExp(t.beginLine, t.beginColumn, 
+				Integer.parseInt(t.image)); }
+	|
+		"\"" t = <IDENTIFIER> "\""
+		{ return new LiteralStringExp(t.beginLine, t.beginColumn, t.image); }
+	|
+		"(" e = TopExp() ")"
+		{ return e; }
+	|
+		"|" e = TopExp() "|"
+		{ return new SizeTopExp(e.line, e.column, e); }
+}
+
+VarExp VarExp() :
+{
+	Token t;
+}
+{
+	t = <IDENTIFIER>
+	{ return new VarExp(t.beginLine, t.beginColumn, t.image); }
+}
+
+Pred Pred() : 
+{
+	Pred ret;
+}
+{
+	ret = ImpliesPred()
+	
+	{ return ret; }
+}
+
+Pred ImpliesPred() : 
+{
+	Pred p1, p2;
+}
+{
+	p1 = OrPred() 
+	(
+		"=>" p2 = OrPred()
+		{ return new BinaryPred(p1.line, p1.column,
+					p1, BinaryPred.Operator.IMPLIES, p2); }
+	|
+		"<=>" p2 = OrPred()
+		{ return new BinaryPred(p1.line, p1.column,
+					p1, BinaryPred.Operator.IFF, p2); }
+	|
+		{ return p1; }
+	)	
+}
+
+Pred OrPred() : 
+{
+	Pred ret, right;
+}
+{
+	ret = AndPred()
+	
+	(
+		LOOKAHEAD(2)
+		"||" right = AndPred() 
+		{ ret = new BinaryPred(ret.line, ret.column,
+					ret, BinaryPred.Operator.OR, right); }
+	)*
+	
+		
+	{ return ret; }	
+}
+
+Pred AndPred() : 
+{
+	Pred ret, right;
+}
+{
+	ret = AtomPred()
+	(
+		LOOKAHEAD(2)
+		"&&" right = AtomPred() 
+		{ ret = new BinaryPred(ret.line, ret.column,
+					ret, BinaryPred.Operator.AND, right); }
+	)*
+		
+	{ return ret; }
+}
+
+Pred AtomPred() : 
+{
+	Pred p;
+	Token t;
+} 
+{
+		t = "!" p = AtomPred()
+		{ return new NotPred(t.beginLine, t.beginColumn, p); }
+	|
+		// Brackets are used in preds, trms, exps
+		// so we need disambiguation.
+		LOOKAHEAD("(" Pred()) "(" p = Pred() ")"
+		{ return p; }
+	|
+		t = <FALSE> 
+		{ return new BooleanLiteralPred(t.beginLine, t.beginColumn, 
+					BooleanLiteralPred.Type.FALSEE); }
+	| 
+		t = <TRUE>  
+		{ return new BooleanLiteralPred(t.beginLine, t.beginColumn, 
+					BooleanLiteralPred.Type.TRUEE); }
+	|
+		p = RelationPred()
+		{ return p; }
+	|
+		p = QuantifiedPred()
+		{ return p; }
+}
+
+QuantifiedPred QuantifiedPred() :
+{
+	Token t;
+	QuantifiedPred.Type type;
+	Token var;
+	Trm lowerBound, upperBound;
+	Pred subPred;
+}
+{
+	(
+		t = <FORALL>
+		{ type = QuantifiedPred.Type.FORALL; }
+	|
+		t = <EXISTS>
+		{ type = QuantifiedPred.Type.EXISTS; }
+	)
+	var = <IDENTIFIER>
+	<FROM>
+	lowerBound = Trm()
+	<TO>
+	upperBound = Trm()
+	":"
+	subPred = AtomPred()
+	{ return new QuantifiedPred(t.beginLine, t.beginColumn, type, 
+			var.image, lowerBound, upperBound, subPred); }
+}
+
+Pred RelationPred() :
+{
+	Trm left, right;
+	RelationPred.Operator op;
+}
+{
+	left = Trm() 
+	(
+		"=" { op = RelationPred.Operator.EQ; }
+	|
+		"!=" { op = RelationPred.Operator.NEQ; }
+	|
+		"<=" { op = RelationPred.Operator.LE; }
+	|
+		"<" { op = RelationPred.Operator.LT; }
+	|
+		">=" { op = RelationPred.Operator.GE; }
+	|
+		">" { op = RelationPred.Operator.GT; }
+	)
+	right = Trm()
+	
+	{ return new RelationPred(left.line, left.column,
+				left, op, right); }
+}
+
+Trm Trm() : 
+{
+	Trm ret;
+} 
+{
+	ret = AdditiveTrm()
+	
+	{ return ret; }
+}
+
+Trm AdditiveTrm() : 
+{
+	Trm ret, right;
+}
+{
+	ret = MultiplicativeTrm()
+	(
+		"+" right = MultiplicativeTrm()
+		{ ret = new BinaryTrm(ret.line, ret.column,
+					ret, BinaryTrm.Operator.ADD, right); }
+	|
+		"-" right = MultiplicativeTrm()
+		{ ret = new BinaryTrm(ret.line, ret.column,
+					ret, BinaryTrm.Operator.SUBS, right); }
+	)*
+	
+	{ return ret; }
+}
+
+Trm MultiplicativeTrm() :
+{
+	Trm ret, right;
+}
+{
+	ret = AtomTrm()
+	(
+		"*" right = AtomTrm()
+		{ ret = new BinaryTrm(ret.line, ret.column,
+					ret, BinaryTrm.Operator.MUL, right); }
+	|
+		"/" right = AtomTrm()
+		{ ret = new BinaryTrm(ret.line, ret.column,
+					ret, BinaryTrm.Operator.DIV, right); }
+	)*
+	
+	{ return ret; }
+}
+
+Trm AtomTrm() : 
+{
+	Trm trm;
+	Token t;
+}
+{
+		t = "-" trm = AtomTrm() 
+		{ return new NegTrm(t.beginLine, t.beginColumn, trm); }
+	| 
+		"(" trm = Trm() ")" 
+		{ return trm; }
+	| 
+		trm = VarTrm() 
+		{ return trm; }
+	| 
+		trm = IntegerLiteralTrm()
+		{ return trm; }
+	| 
+		trm = StringLiteralTrm()
+		{ return trm; }
+	|
+		trm = StringSizeTrm()
+		{ return trm; }
+}
+
+VarTrm VarTrm() :
+{
+	Token t;
+	Trm.Type type = Trm.Type.CURR_VALUE;
+}
+{
+	t = <IDENTIFIER>
+	
+	[ 
+		"@pre" { type = Trm.Type.PRE_VALUE; } 
+	]
+	
+	{ return new VarTrm(t.beginLine, t.beginColumn, t.image, type); }
+}
+
+IntegerLiteralTrm IntegerLiteralTrm() :
+{
+	Token t;	
+}
+{
+	t = <INTEGER_LITERAL>
+	
+	{ return new IntegerLiteralTrm(t.beginLine, t.beginColumn, Integer.parseInt(t.image)); }
+}
+
+StringLiteralTrm StringLiteralTrm() :
+{
+	Token t;	
+}
+{
+	"\"" t = <IDENTIFIER> "\""
+	
+	{ return new StringLiteralTrm(t.beginLine, t.beginColumn, t.image); }
+}
+
+StringSizeTrm StringSizeTrm() :
+{
+	Token t;
+}
+{
+	"|" t = <IDENTIFIER> "|"
+	{ return new StringSizeTrm(t.beginLine, t.beginColumn, t.image); }
+}
