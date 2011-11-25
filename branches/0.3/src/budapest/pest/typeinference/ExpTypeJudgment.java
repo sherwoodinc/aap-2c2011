@@ -3,7 +3,7 @@ package budapest.pest.typeinference;
 import budapest.pest.ast.exp.Exp;
 import budapest.pest.dump.pest.ExpPrinter;
 
-public class PestTypeJudgment {
+public class ExpTypeJudgment {
 
 	public final boolean isValid;
 	
@@ -15,7 +15,7 @@ public class PestTypeJudgment {
 	
 	public final String status;
 		
-	public PestTypeJudgment(PestType type, PestTypedContext context, Exp expression, boolean isValid, String status)
+	public ExpTypeJudgment(PestType type, PestTypedContext context, Exp expression, boolean isValid, String status)
 	{
 		this.type = type;
 		this.context = context;
@@ -24,12 +24,12 @@ public class PestTypeJudgment {
 		this.status = status;
 	}
 	
-	public PestTypeJudgment(boolean isValid, String status)
+	public ExpTypeJudgment(boolean isValid, String status)
 	{
 		this(null, null, null, isValid, status);
 	}
 	
-	public PestTypeJudgment(PestType type, PestTypedContext context, Exp expression)
+	public ExpTypeJudgment(PestType type, PestTypedContext context, Exp expression)
 	{
 		this(type, context, expression, true, "");
 	}
