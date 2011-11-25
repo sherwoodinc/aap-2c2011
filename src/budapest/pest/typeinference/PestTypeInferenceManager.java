@@ -1,6 +1,5 @@
 package budapest.pest.typeinference;
 
-import budapest.pest.ast.params.FormalParam;
 import budapest.pest.ast.proc.Procedure;
 import budapest.pest.ast.proc.Program;
 import budapest.pest.ast.stmt.AssignStmt;
@@ -19,13 +18,19 @@ public class PestTypeInferenceManager extends PestVisitor<PestTypeInferenceResul
 	{
 		for(Procedure proc : n.procs)
 		{
-			PestTypedContext context = new PestTypedContext();
-			for(FormalParam param : proc.params)
+			PredTypeJudgment preJudgment = proc.pre.accept(new PredTypeInferenceManager(), new PestTypedContext());
+			if(!preJudgment.isValid)
 			{
-				context.add(param.name, type)
+				return new PestTypeInferenceResult(null, false, preJudgment.toString());
 			}
 			
-			PestTypeInferenceResult result = proc.accept(this, new PestTypedContext());
+			PredTypeJudgment postJudgment = proc.post.accept(new PredTypeInferenceManager(), preJudgment.context);
+			if(!postJudgment.isValid)
+			{
+				return new PestTypeInferenceResult(null, false, postJudgment.toString());
+			}
+									
+			PestTypeInferenceResult result = proc.accept(this, postJudgment.context);
 			if(!result.succeeded)
 			{
 				return result;
@@ -46,7 +51,7 @@ public class PestTypeInferenceManager extends PestVisitor<PestTypeInferenceResul
 	
 	public PestTypeInferenceResult visit(AssignStmt n, PestTypedContext context)
 	{
-		PestTypeJudgment rightJudgment = n.right.accept(new ExpTypeInferenceManager(), context);
+		ExpTypeJudgment rightJudgment = n.right.accept(new ExpTypeInferenceManager(), context);
 		if(!rightJudgment.isValid)
 		{
 			return new PestTypeInferenceResult(null,
@@ -73,7 +78,7 @@ public class PestTypeInferenceManager extends PestVisitor<PestTypeInferenceResul
 	
 	public PestTypeInferenceResult visit(LocalDefStmt n, PestTypedContext context)
 	{
-		PestTypeJudgment rightJudgment = n.right.accept(new ExpTypeInferenceManager(), context);
+		ExpTypeJudgment rightJudgment = n.right.accept(new ExpTypeInferenceManager(), context);
 		if(!rightJudgment.isValid)
 		{
 			return new PestTypeInferenceResult(null,
@@ -94,7 +99,7 @@ public class PestTypeInferenceManager extends PestVisitor<PestTypeInferenceResul
 	
 	public PestTypeInferenceResult visit(IfStmt n, PestTypedContext context)
 	{
-		PestTypeJudgment conditionJudgment = n.condition.accept(new ExpTypeInferenceManager(), context);
+		ExpTypeJudgment conditionJudgment = n.condition.accept(new ExpTypeInferenceManager(), context);
 		if(!conditionJudgment.isValid)
 		{
 			return new PestTypeInferenceResult(null,
@@ -110,7 +115,7 @@ public class PestTypeInferenceManager extends PestVisitor<PestTypeInferenceResul
 	
 	public PestTypeInferenceResult visit(LoopStmt n, PestTypedContext context)
 	{
-		PestTypeJudgment conditionJudgment = n.condition.accept(new ExpTypeInferenceManager(), context);
+		ExpTypeJudgment conditionJudgment = n.condition.accept(new ExpTypeInferenceManager(), context);
 		if(!conditionJudgment.isValid)
 		{
 			return new PestTypeInferenceResult(null,
