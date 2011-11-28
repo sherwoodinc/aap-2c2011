@@ -100,4 +100,9 @@ public class PestTypedContext {
 			}
 		}
 	}
+	
+	public String toString() 
+	{
+		return _varTypes.toString();
+	}
 }

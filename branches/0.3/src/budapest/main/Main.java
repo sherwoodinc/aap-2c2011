@@ -18,6 +18,8 @@ import budapest.pest.parser.PestParser;
 import budapest.pest.pesttocvc3.PestToCVC3Exception;
 import budapest.pest.pesttocvc3.PestToCVC3Translator;
 import budapest.pest.pesttocvc3.PestVarContext;
+import budapest.pest.typeinference.PestTypeInferenceManager;
+import budapest.pest.typeinference.PestTypeInferenceResult;
 
 public class Main {
 
@@ -37,6 +39,10 @@ public class Main {
 				//PestVarContext.reset();
 				Program p = GetProgramFromFile(inputFile);
 				System.out.print(p.toString());
+				
+				PestTypeInferenceManager inferenceManager = new PestTypeInferenceManager();
+				PestTypeInferenceResult result = inferenceManager.infere(p);
+				System.out.println(result.message);
 				/*String cvc3String = GetCVC3StringFromProgram(p);
 							
 				if(!executeCVC3) 
