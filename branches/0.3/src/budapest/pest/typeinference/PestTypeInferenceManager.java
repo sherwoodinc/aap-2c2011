@@ -24,11 +24,15 @@ public class PestTypeInferenceManager extends PestVisitor<PestTypeInferenceResul
 				return new PestTypeInferenceResult(null, false, preJudgment.toString());
 			}
 			
+			System.out.println("Pre: " + preJudgment.context.toString());
+			
 			PredTypeJudgment postJudgment = proc.post.accept(new PredTypeInferenceManager(), preJudgment.context);
 			if(!postJudgment.isValid)
 			{
 				return new PestTypeInferenceResult(null, false, postJudgment.toString());
 			}
+			
+			System.out.println("Post: " + postJudgment.context.toString());
 									
 			PestTypeInferenceResult result = proc.accept(this, postJudgment.context);
 			if(!result.succeeded)
@@ -36,7 +40,7 @@ public class PestTypeInferenceManager extends PestVisitor<PestTypeInferenceResul
 				return result;
 			}
 			
-			System.out.println("Final Context: " + postJudgment.context.toString());
+			System.out.println("Final Context: " + result.context.toString());
 		}
 		return new PestTypeInferenceResult(new PestTypedContext(), true, "Program typed OK!");
 	}
