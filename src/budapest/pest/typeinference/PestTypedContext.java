@@ -103,6 +103,17 @@ public class PestTypedContext {
 	
 	public String toString() 
 	{
-		return _varTypes.toString();
+		String result = "";
+		for(String var : getAllTypedVars())
+		{
+			result += var + ":" + getTypeOf(var).getTypeName() + ", ";
+		}
+		if(result.length() > 0)
+		{
+			result = result.substring(0, result.length()-2);
+		}
+		result = "{" + result + "}";
+		
+		return result;
 	}
 }
