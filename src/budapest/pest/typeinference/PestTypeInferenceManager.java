@@ -35,6 +35,8 @@ public class PestTypeInferenceManager extends PestVisitor<PestTypeInferenceResul
 			{
 				return result;
 			}
+			
+			System.out.println("contexto final: "+postJudgment.context.toString());
 		}
 		return new PestTypeInferenceResult(new PestTypedContext(), true, "Program typed OK!");
 	}
@@ -94,7 +96,7 @@ public class PestTypeInferenceManager extends PestVisitor<PestTypeInferenceResul
 	{
 		PestTypeInferenceResult r1 = n.s1.accept(this, context);
 		if(!r1.succeeded) return r1;
-		return n.s1.accept(this, r1.context);
+		return n.s2.accept(this, r1.context);//deberia decir s2
 	}
 	
 	public PestTypeInferenceResult visit(IfStmt n, PestTypedContext context)
@@ -110,7 +112,7 @@ public class PestTypeInferenceManager extends PestVisitor<PestTypeInferenceResul
 		PestTypeInferenceResult resThen = n.thenS.accept(this, context);
 		if(!resThen.succeeded) return resThen;
 		
-		return n.elseS.accept(this, context);
+		return n.elseS.accept(this, context); //resThen.context
 	}
 	
 	public PestTypeInferenceResult visit(LoopStmt n, PestTypedContext context)

@@ -5,6 +5,10 @@ import budapest.pest.ast.pred.BooleanLiteralPred;
 import budapest.pest.ast.pred.NotPred;
 import budapest.pest.ast.pred.QuantifiedPred;
 import budapest.pest.ast.pred.RelationPred;
+import budapest.pest.ast.pred.trm.IntegerLiteralTrm;
+import budapest.pest.ast.pred.trm.StringSizeTrm;
+import budapest.pest.ast.pred.trm.Trm;
+import budapest.pest.ast.pred.trm.VarTrm;
 import budapest.pest.ast.visitor.PredVisitor;
 import budapest.pest.dump.pest.ExpPrinter;
 import budapest.pest.dump.pest.PredPrinter;
@@ -82,6 +86,24 @@ public class PredTypeInferenceManager extends PredVisitor<PredTypeJudgment, Pest
 	
 	public PredTypeJudgment visit(RelationPred n, PestTypedContext context)
 	{
-		return null;
+		Trm left = n.left;
+		if(!(left instanceof IntegerLiteralTrm)) {
+			
+			if(left instanceof StringSizeTrm) {
+			
+				String name = ((StringSizeTrm) left).string;
+				if(!context.isTyped(name)) {
+					context.add(name, PestTypes.String());
+				}
+			}else if(left instanceof VarTrm){
+				
+				String name = ((VarTrm) left).name;
+				if(!context.isTyped(name)) {
+					context.add(name, PestTypes.Int());
+				}
+			}
+		}
+		
+		return new PredTypeJudgment(PestTypes.Bool(), context, n);
 	}
 }

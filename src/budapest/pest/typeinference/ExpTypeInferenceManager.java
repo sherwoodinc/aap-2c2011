@@ -25,11 +25,20 @@ public class ExpTypeInferenceManager extends ExpVisitor<ExpTypeJudgment, PestTyp
 		if(n.op != ArithTopExp.Operator.ADD && 
 		  (leftJudgment.type.equals(PestTypes.String()) || rightJudgment.type.equals(PestTypes.String())))
 		{
-			if(n.op != ArithTopExp.Operator.ADD)
-			{
+			//if(n.op != ArithTopExp.Operator.ADD)
+			//{
 				return new ExpTypeJudgment(false,
 						n.op.toString() + " operation is not defined for type string");
-			}
+			//}
+		}
+		
+		if(n.op == ArithTopExp.Operator.ADD &&
+			(! (leftJudgment.type.equals(rightJudgment.type))))  {
+			return new ExpTypeJudgment(false,
+					n.op.toString() + " operation is not defined for type " + 
+					leftJudgment.type +
+					" and " + 
+					rightJudgment.type );
 		}
 		
 		PestType unifier = mgu.execute(leftJudgment.type, rightJudgment.type);
