@@ -45,16 +45,16 @@ public class ExpTypeInferenceManager extends ExpVisitor<ExpTypeJudgment, PestTyp
 		PestTypedContextUnionResult unionResult = context.union(rightJudgment.context);
 		if(unionResult.succeeded)
 		{
-			return new ExpTypeJudgment(unifier,
-					context, n, true, "");
-		}
-		else
-		{
 			return new ExpTypeJudgment(false,
 					"Typing error in expression: " + 
 				    n.accept(new ExpPrinter(), null) + ". " + 
 					unionResult.message);
 		}
+		context.replaceType(leftJudgment.type, unifier);
+		context.replaceType(rightJudgment.type, unifier);
+		
+		return new ExpTypeJudgment(unifier,
+				context, n, true, "");
 	}
 	
 	public ExpTypeJudgment visit(LiteralIntExp n, PestTypedContext arg) 
@@ -70,7 +70,10 @@ public class ExpTypeInferenceManager extends ExpVisitor<ExpTypeJudgment, PestTyp
 	public ExpTypeJudgment visit(VarExp n, PestTypedContext arg) 
 	{
 		PestTypedContext context = new PestTypedContext();
-		context.add(n.name, new PestTypingConstant());
+		if(!arg.isTyped(n.name))
+		{
+			context.add(n.name, new PestTypingConstant());
+		}
 		return new ExpTypeJudgment(new PestTypingConstant(), context, n);
 	}
 
