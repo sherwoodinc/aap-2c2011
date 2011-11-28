@@ -14,35 +14,52 @@ import budapest.pest.dump.pest.ExpPrinter;
 
 public class PestTypeInferenceManager extends PestVisitor<PestTypeInferenceResult, PestTypedContext> {
 
-	public PestTypeInferenceResult infere(Program n)
+	public PestProgramTypeInferenceResult infere(Program n)
 	{
+		PestProgramTypeInferenceResult programResult = new PestProgramTypeInferenceResult(); 
+						
+		boolean succeeded = true;
+		
 		for(Procedure proc : n.procs)
 		{
 			PredTypeJudgment preJudgment = proc.pre.accept(new PredTypeInferenceManager(), new PestTypedContext());
 			if(!preJudgment.isValid)
 			{
-				return new PestTypeInferenceResult(null, false, preJudgment.toString());
+				programResult.procsInference.add(new PestProcedureTypeInferenceResult(proc.name, null, false, preJudgment.toString()));
+				succeeded = false;
+				continue;
 			}
-			
-			System.out.println("Pre: " + preJudgment.context.toString());
 			
 			PredTypeJudgment postJudgment = proc.post.accept(new PredTypeInferenceManager(), preJudgment.context);
 			if(!postJudgment.isValid)
 			{
-				return new PestTypeInferenceResult(null, false, postJudgment.toString());
+				programResult.procsInference.add(new PestProcedureTypeInferenceResult(proc.name, null, false, postJudgment.toString()));
+				succeeded = false;
+				continue;
 			}
-			
-			System.out.println("Post: " + postJudgment.context.toString());
-									
+								
 			PestTypeInferenceResult result = proc.accept(this, postJudgment.context);
 			if(!result.succeeded)
 			{
-				return result;
+				programResult.procsInference.add(new PestProcedureTypeInferenceResult(proc.name, null, false, result.toString()));
+				succeeded = false;
+				continue;
 			}
-			
-			System.out.println("Final Context: " + result.context.toString());
+
+			programResult.procsInference.add(new PestProcedureTypeInferenceResult(proc.name, null, true, result.toString()));
 		}
-		return new PestTypeInferenceResult(new PestTypedContext(), true, "Program typed OK!");
+		
+		programResult.succeeded = succeeded;
+		if(succeeded)
+		{
+			programResult.message = "Program typed OK!";
+		}
+		else
+		{
+			programResult.message = "Program did not type";
+		}
+		
+		return programResult; 
 	}
 	
 	public PestTypeInferenceResult visit(Procedure n, PestTypedContext context)

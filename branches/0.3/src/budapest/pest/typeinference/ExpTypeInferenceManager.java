@@ -43,7 +43,7 @@ public class ExpTypeInferenceManager extends ExpVisitor<ExpTypeJudgment, PestTyp
 		
 		PestTypedContext context = new PestTypedContext(leftJudgment.context);
 		PestTypedContextUnionResult unionResult = context.union(rightJudgment.context);
-		if(unionResult.succeeded)
+		if(!unionResult.succeeded)
 		{
 			return new ExpTypeJudgment(false,
 					"Typing error in expression: " + 
