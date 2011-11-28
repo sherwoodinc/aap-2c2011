@@ -14,4 +14,18 @@ public class PestTypeInferenceResult {
 		this.succeeded = succeeded;
 		this.message = message; 
 	}
+	
+	public String toString()
+	{
+		String result = "";
+		if(succeeded)
+		{
+			result += "Variable typing: " + context.toString();
+		}
+		else
+		{
+			result = message;
+		}
+		return result;
+	}
 }
