@@ -5,13 +5,9 @@ import budapest.pest.ast.pred.BooleanLiteralPred;
 import budapest.pest.ast.pred.NotPred;
 import budapest.pest.ast.pred.QuantifiedPred;
 import budapest.pest.ast.pred.RelationPred;
-import budapest.pest.ast.pred.trm.IntegerLiteralTrm;
-import budapest.pest.ast.pred.trm.StringSizeTrm;
-import budapest.pest.ast.pred.trm.Trm;
-import budapest.pest.ast.pred.trm.VarTrm;
 import budapest.pest.ast.visitor.PredVisitor;
-import budapest.pest.dump.pest.ExpPrinter;
 import budapest.pest.dump.pest.PredPrinter;
+import budapest.pest.dump.pest.TrmPrinter;
 
 public class PredTypeInferenceManager extends PredVisitor<PredTypeJudgment, PestTypedContext> {
 			
@@ -25,20 +21,30 @@ public class PredTypeInferenceManager extends PredVisitor<PredTypeJudgment, Pest
 		
 		if(leftJudgment.type.equals(PestTypes.Bool()) && rightJudgment.type.equals(PestTypes.Bool()))
 		{
-			PestTypedContext newContext = new PestTypedContext(leftJudgment.context);
-			PestTypedContextUnionResult unionResult = context.union(rightJudgment.context);
-			if(unionResult.succeeded)
+			PestTypedContext leftAndRightContext = new PestTypedContext(leftJudgment.context);
+			PestTypedContextUnionResult leftAndRightResult = leftAndRightContext.union(rightJudgment.context);
+			if(!leftAndRightResult.succeeded)
 			{
-				return new PredTypeJudgment(PestTypes.Bool(),
-						newContext, n, true, "");
+				return new PredTypeJudgment(false,
+						"Typing error in pred: " + 
+					    n.accept(new PredPrinter(), null) + ". " + 
+					    leftAndRightResult.message);
+				
 			}
-			else
+			
+			PestTypedContext newContext = new PestTypedContext(leftAndRightContext);
+			PestTypedContextUnionResult unionResult = context.union(leftAndRightContext);
+			if(!unionResult.succeeded)
 			{
 				return new PredTypeJudgment(false,
 						"Typing error in pred: " + 
 					    n.accept(new PredPrinter(), null) + ". " + 
 						unionResult.message);
+				
 			}
+			
+			return new PredTypeJudgment(PestTypes.Bool(),
+					newContext, n, true, "");
 		}
 		
 		return new PredTypeJudgment(false,
@@ -86,24 +92,50 @@ public class PredTypeInferenceManager extends PredVisitor<PredTypeJudgment, Pest
 	
 	public PredTypeJudgment visit(RelationPred n, PestTypedContext context)
 	{
-		Trm left = n.left;
-		if(!(left instanceof IntegerLiteralTrm)) {
-			
-			if(left instanceof StringSizeTrm) {
-			
-				String name = ((StringSizeTrm) left).string;
-				if(!context.isTyped(name)) {
-					context.add(name, PestTypes.String());
-				}
-			}else if(left instanceof VarTrm){
-				
-				String name = ((VarTrm) left).name;
-				if(!context.isTyped(name)) {
-					context.add(name, PestTypes.Int());
-				}
-			}
+		TrmTypeJudgment leftJudgment = n.left.accept(new TrmTypeInferenceManager(), context);
+		if(!leftJudgment.isValid)
+		{
+			return new PredTypeJudgment(false, leftJudgment.toString());
 		}
 		
-		return new PredTypeJudgment(PestTypes.Bool(), context, n);
+		TrmTypeJudgment rightJudgment = n.right.accept(new TrmTypeInferenceManager(), context);
+		if(!rightJudgment.isValid)
+		{
+			return new PredTypeJudgment(false, rightJudgment.toString());
+		}
+		
+		PestType unifier = mgu.execute(leftJudgment.type, rightJudgment.type);
+		if(unifier == null)
+		{
+			return new PredTypeJudgment(false, 
+					"Cannot apply "+ n.op.toString()  + " to the terms " + n.left.accept(new TrmPrinter(), null) + 
+					" ("+ leftJudgment.type.getTypeName() +") and " + n.right.accept(new TrmPrinter(), null) + 
+					" (" + rightJudgment.type.getTypeName() + ")");
+		}
+		
+		PestTypedContext leftAndRightContext = new PestTypedContext(leftJudgment.context);
+		PestTypedContextUnionResult leftAndRightResult = leftAndRightContext.union(rightJudgment.context);
+		if(!leftAndRightResult.succeeded)
+		{
+			return new PredTypeJudgment(false,
+					"Typing error in pred: " + 
+				    n.accept(new PredPrinter(), null) + ". " + 
+				    leftAndRightResult.message);
+		}
+		leftAndRightContext.replaceType(leftJudgment.type, unifier);
+		leftAndRightContext.replaceType(rightJudgment.type, unifier);
+		
+		PestTypedContext newContext = new PestTypedContext(leftAndRightContext);
+		PestTypedContextUnionResult unionResult = newContext.union(context);
+		if(!unionResult.succeeded)
+		{
+			return new PredTypeJudgment(false,
+					"Typing error in pred: " + 
+				    n.accept(new PredPrinter(), null) + ". " + 
+				    leftAndRightResult.message);
+		}
+		
+		return new PredTypeJudgment(PestTypes.Bool(),
+				newContext, n, true, "");
 	}
 }

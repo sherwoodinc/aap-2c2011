@@ -21,9 +21,9 @@ public class PestTypedContext {
 	
 	private void addAll(PestTypedContext other)
 	{
-		for(String var : getAllTypedVars())
+		for(String var : other.getAllTypedVars())
 		{
-			add(var, getTypeOf(var));
+			add(var, other.getTypeOf(var));
 		}
 	}
 	
@@ -83,7 +83,14 @@ public class PestTypedContext {
 				}
 				else
 				{
-					setType(typedVar, thisType);
+					for(String newTypedVar : getAllTypedVars())
+					{
+						PestType newTypedVarType = getTypeOf(newTypedVar);
+						if(newTypedVarType.equals(thisType) || newTypedVarType.equals(otherType))
+						{
+							setType(typedVar, unifier);
+						}
+					}
 				}
 			}
 		}
