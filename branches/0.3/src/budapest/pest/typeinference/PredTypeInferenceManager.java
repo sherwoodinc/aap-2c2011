@@ -26,25 +26,15 @@ public class PredTypeInferenceManager extends PredVisitor<PredTypeJudgment, Pest
 			if(!leftAndRightResult.succeeded)
 			{
 				return new PredTypeJudgment(false,
-						"Typing error in pred: " + 
+						"Typing " +
+						"error in pred: " + 
 					    n.accept(new PredPrinter(), null) + ". " + 
 					    leftAndRightResult.message);
 				
 			}
-			
-			PestTypedContext newContext = new PestTypedContext(leftAndRightContext);
-			PestTypedContextUnionResult unionResult = context.union(leftAndRightContext);
-			if(!unionResult.succeeded)
-			{
-				return new PredTypeJudgment(false,
-						"Typing error in pred: " + 
-					    n.accept(new PredPrinter(), null) + ". " + 
-						unionResult.message);
-				
-			}
-			
+						
 			return new PredTypeJudgment(PestTypes.Bool(),
-					newContext, n, true, "");
+					leftAndRightContext, n, true, "");
 		}
 		
 		return new PredTypeJudgment(false,
@@ -84,12 +74,7 @@ public class PredTypeInferenceManager extends PredVisitor<PredTypeJudgment, Pest
 		return new PredTypeJudgment(false,
 				"Cannot apply not to pred: " + subPredJudgment.pred.accept(new PredPrinter(), null));
 	}
-	
-	public PredTypeJudgment visit(QuantifiedPred n, PestTypedContext context)
-	{
-		return null;
-	}
-	
+			
 	public PredTypeJudgment visit(RelationPred n, PestTypedContext context)
 	{
 		TrmTypeJudgment leftJudgment = n.left.accept(new TrmTypeInferenceManager(), context);
@@ -124,18 +109,13 @@ public class PredTypeInferenceManager extends PredVisitor<PredTypeJudgment, Pest
 		}
 		leftAndRightContext.replaceType(leftJudgment.type, unifier);
 		leftAndRightContext.replaceType(rightJudgment.type, unifier);
-		
-		PestTypedContext newContext = new PestTypedContext(leftAndRightContext);
-		PestTypedContextUnionResult unionResult = newContext.union(context);
-		if(!unionResult.succeeded)
-		{
-			return new PredTypeJudgment(false,
-					"Typing error in pred: " + 
-				    n.accept(new PredPrinter(), null) + ". " + 
-				    leftAndRightResult.message);
-		}
-		
+						
 		return new PredTypeJudgment(PestTypes.Bool(),
-				newContext, n, true, "");
+				leftAndRightContext, n, true, "");
+	}
+	
+	public PredTypeJudgment visit(QuantifiedPred n, PestTypedContext context)
+	{
+		return null;
 	}
 }

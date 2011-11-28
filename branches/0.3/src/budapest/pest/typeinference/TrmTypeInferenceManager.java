@@ -42,19 +42,19 @@ public class TrmTypeInferenceManager extends TrmVisitor<TrmTypeJudgment, PestTyp
 		}
 		
 		PestTypedContext newContext = new PestTypedContext(leftJudgment.context);
-		PestTypedContextUnionResult unionResult = context.union(rightJudgment.context);
-		if(unionResult.succeeded)
-		{
-			return new TrmTypeJudgment(unifier,
-					newContext, n, true, "");
-		}
-		else
+		PestTypedContextUnionResult unionResult = newContext.union(rightJudgment.context);
+		if(!unionResult.succeeded)
 		{
 			return new TrmTypeJudgment(false,
 					"Typing error in expression: " + 
 				    n.accept(new TrmPrinter(), null) + ". " + 
 					unionResult.message);
 		}
+		newContext.replaceType(leftJudgment.type, unifier);
+		newContext.replaceType(rightJudgment.type, unifier);
+		
+		return new TrmTypeJudgment(unifier,
+				newContext, n, true, "");
 	}
 	
 	public TrmTypeJudgment visit(IntegerLiteralTrm n, PestTypedContext context)
