@@ -36,7 +36,7 @@ public class PestTypeInferenceManager extends PestVisitor<PestTypeInferenceResul
 				return result;
 			}
 			
-			System.out.println("contexto final: "+postJudgment.context.toString());
+			System.out.println("Final Context: " + postJudgment.context.toString());
 		}
 		return new PestTypeInferenceResult(new PestTypedContext(), true, "Program typed OK!");
 	}
