@@ -29,8 +29,8 @@ public class PredTypeInferenceManager extends PredVisitor<PredTypeJudgment, Pest
 						"Typing " +
 						"error in pred: " + 
 					    n.accept(new PredPrinter(), null) + ". " + 
-					    leftAndRightResult.message);
-				
+					    leftAndRightResult.message + 
+						". Line " + n.line + " column " + n.column + ".");
 			}
 						
 			return new PredTypeJudgment(PestTypes.Bool(),
@@ -41,7 +41,8 @@ public class PredTypeInferenceManager extends PredVisitor<PredTypeJudgment, Pest
 				"Typing error in pred: " + 
 			    n.accept(new PredPrinter(), null) + ". " + 
 				"Left is " + leftJudgment.type.getTypeName() +
-				" and right is " + rightJudgment.type.getTypeName());
+				" and right is " + rightJudgment.type.getTypeName() + 
+				". Line " + n.line + " column " + n.column + ".");
 	}
 	
 	public PredTypeJudgment visit(BooleanLiteralPred n, PestTypedContext context)
@@ -72,7 +73,8 @@ public class PredTypeInferenceManager extends PredVisitor<PredTypeJudgment, Pest
 		}
 		
 		return new PredTypeJudgment(false,
-				"Cannot apply not to pred: " + subPredJudgment.pred.accept(new PredPrinter(), null));
+				"Cannot apply not to pred: " + subPredJudgment.pred.accept(new PredPrinter(), null) + 
+				". Line " + n.line + " column " + n.column + ".");
 	}
 			
 	public PredTypeJudgment visit(RelationPred n, PestTypedContext context)
@@ -95,7 +97,8 @@ public class PredTypeInferenceManager extends PredVisitor<PredTypeJudgment, Pest
 			return new PredTypeJudgment(false, 
 					"Cannot apply "+ n.op.toString()  + " to the terms " + n.left.accept(new TrmPrinter(), null) + 
 					" ("+ leftJudgment.type.getTypeName() +") and " + n.right.accept(new TrmPrinter(), null) + 
-					" (" + rightJudgment.type.getTypeName() + ")");
+					" (" + rightJudgment.type.getTypeName() + ")" + 
+					". Line " + n.line + " column " + n.column + ".");
 		}
 		
 		PestTypedContext leftAndRightContext = new PestTypedContext(leftJudgment.context);
@@ -105,7 +108,8 @@ public class PredTypeInferenceManager extends PredVisitor<PredTypeJudgment, Pest
 			return new PredTypeJudgment(false,
 					"Typing error in pred: " + 
 				    n.accept(new PredPrinter(), null) + ". " + 
-				    leftAndRightResult.message);
+				    leftAndRightResult.message + 
+					". Line " + n.line + " column " + n.column + ".");
 		}
 		leftAndRightContext.replaceType(leftJudgment.type, unifier);
 		leftAndRightContext.replaceType(rightJudgment.type, unifier);

@@ -90,8 +90,9 @@ public class PestTypeInferenceManager extends PestVisitor<PestTypeInferenceResul
 			{
 				return new PestTypeInferenceResult(null, 
 						false,
-						n.left.name + "(" + varType.getTypeName() + ") has a different type than " +
-						n.right.accept(new ExpPrinter(), null));
+						n.left.name + " (" + varType.getTypeName() + ") has a different type than " +
+						n.right.accept(new ExpPrinter(), null) + " (" + rightJudgment.type.getTypeName() + ")" + 
+						". Line " + n.line + " column " + n.column + ".");
 			}
 		}
 		

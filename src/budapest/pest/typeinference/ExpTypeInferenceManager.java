@@ -26,7 +26,8 @@ public class ExpTypeInferenceManager extends ExpVisitor<ExpTypeJudgment, PestTyp
 		  (leftJudgment.type.equals(PestTypes.String()) || rightJudgment.type.equals(PestTypes.String())))
 		{
 			return new ExpTypeJudgment(false,
-					n.op.toString() + " operation is not defined for type string");
+					n.op.toString() + " operation is not defined for type string. Line " + 
+					n.line + " column " + n.column + ".");
 		}
 		
 		PestType unifier = mgu.execute(leftJudgment.type, rightJudgment.type);
@@ -38,7 +39,8 @@ public class ExpTypeInferenceManager extends ExpVisitor<ExpTypeJudgment, PestTyp
 			return new ExpTypeJudgment(false,
 					leftAsString + " (" + leftJudgment.type.getTypeName() + ")" + 
 					" has a different type than " +
-					rightAsString + " (" + rightJudgment.type.getTypeName()  + ")");
+					rightAsString + " (" + rightJudgment.type.getTypeName()  + ") on expression " +
+					n.accept(new ExpPrinter(), null) + ". Line " + n.line + " column " + n.column + ".");
 		}
 		
 		PestTypedContext context = new PestTypedContext(leftJudgment.context);
@@ -48,7 +50,7 @@ public class ExpTypeInferenceManager extends ExpVisitor<ExpTypeJudgment, PestTyp
 			return new ExpTypeJudgment(false,
 					"Typing error in expression: " + 
 				    n.accept(new ExpPrinter(), null) + ". " + 
-					unionResult.message);
+					unionResult.message + ". Line " + n.line + " column " + n.column + ".");
 		}
 		context.replaceType(leftJudgment.type, unifier);
 		context.replaceType(rightJudgment.type, unifier);
@@ -106,7 +108,8 @@ public class ExpTypeInferenceManager extends ExpVisitor<ExpTypeJudgment, PestTyp
 		}
 		
 		return new ExpTypeJudgment(false,
-				"Cannot apply neg operation to expression: " + subExpJudgment.expression.accept(new ExpPrinter(), null));
+				"Cannot apply neg operation to expression: " + subExpJudgment.expression.accept(new ExpPrinter(), null) + 
+				". Line " + n.line + " column " + n.column + ".");
 	}
 	
 	public ExpTypeJudgment visit(RelBoolExp n, PestTypedContext arg) 
@@ -131,7 +134,7 @@ public class ExpTypeInferenceManager extends ExpVisitor<ExpTypeJudgment, PestTyp
 				return new ExpTypeJudgment(false,
 						"Typing error in expression: " + 
 					    n.accept(new ExpPrinter(), null) + ". " + 
-						unionResult.message);
+						unionResult.message + ". Line " + n.line + " column " + n.column + ".");
 			}
 		}
 		
@@ -139,7 +142,8 @@ public class ExpTypeInferenceManager extends ExpVisitor<ExpTypeJudgment, PestTyp
 				"Typing error in expression: " + 
 			    n.accept(new ExpPrinter(), null) + ". " + 
 				"Left is " + leftJudgment.type.getTypeName() +
-				" and right is " + rightJudgment.type.getTypeName());
+				" and right is " + rightJudgment.type.getTypeName() + 
+				". Line " + n.line + " column " + n.column + ".");
 	}
 	
 	public ExpTypeJudgment visit(BinBoolExp n, PestTypedContext arg) 
@@ -164,7 +168,7 @@ public class ExpTypeInferenceManager extends ExpVisitor<ExpTypeJudgment, PestTyp
 				return new ExpTypeJudgment(false,
 						"Typing error in expression: " + 
 					    n.accept(new ExpPrinter(), null) + ". " + 
-						unionResult.message);
+						unionResult.message + ". Line " + n.line + " column " + n.column + ".");
 			}
 		}
 		
@@ -172,7 +176,8 @@ public class ExpTypeInferenceManager extends ExpVisitor<ExpTypeJudgment, PestTyp
 				"Typing error in expression: " + 
 			    n.accept(new ExpPrinter(), null) + ". " + 
 				"Left is " + leftJudgment.type.getTypeName() +
-				" and right is " + rightJudgment.type.getTypeName());
+				" and right is " + rightJudgment.type.getTypeName() + 
+				". Line " + n.line + " column " + n.column + ".");
 	}
 	
 	public ExpTypeJudgment visit(NotBoolExp n, PestTypedContext arg) 
@@ -189,7 +194,8 @@ public class ExpTypeInferenceManager extends ExpVisitor<ExpTypeJudgment, PestTyp
 		}
 				
 		return new ExpTypeJudgment(false,
-				"Cannot apply not operation to expression: " + subExpJudgment.expression.accept(new ExpPrinter(), null));
+				"Cannot apply not operation to expression: " + subExpJudgment.expression.accept(new ExpPrinter(), null) + 
+				". Line " + n.line + " column " + n.column + ".");
 	}
 	
 	public ExpTypeJudgment visit(SizeTopExp n, PestTypedContext arg) 
@@ -215,7 +221,8 @@ public class ExpTypeInferenceManager extends ExpVisitor<ExpTypeJudgment, PestTyp
 		}
 		
 		return new ExpTypeJudgment(false,
-				"Cannot apply size operation to expression: " + subExpJudgment.expression.accept(new ExpPrinter(), null));
+				"Cannot apply size operation to expression: " + subExpJudgment.expression.accept(new ExpPrinter(), null)+ 
+				". Line " + n.line + " column " + n.column + ".");
 	}
 	
 }
