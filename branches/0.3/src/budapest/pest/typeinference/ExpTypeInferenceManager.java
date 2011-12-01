@@ -36,7 +36,7 @@ public class ExpTypeInferenceManager extends ExpVisitor<ExpTypeJudgment, PestTyp
 			String rightAsString = rightJudgment.expression.accept(new ExpPrinter(), null);
 			
 			return new ExpTypeJudgment(false,
-					leftAsString + " (" + leftJudgment.type.getTypeName() + ") " + 
+					leftAsString + " (" + leftJudgment.type.getTypeName() + ")" + 
 					" has a different type than " +
 					rightAsString + " (" + rightJudgment.type.getTypeName()  + ")");
 		}
@@ -69,12 +69,18 @@ public class ExpTypeInferenceManager extends ExpVisitor<ExpTypeJudgment, PestTyp
 	
 	public ExpTypeJudgment visit(VarExp n, PestTypedContext arg) 
 	{
-		PestTypedContext context = new PestTypedContext();
+		PestTypedContext context = new PestTypedContext(arg);
+		PestType resultType; 
 		if(!arg.isTyped(n.name))
 		{
-			context.add(n.name, new PestTypingConstant());
+			resultType = new PestTypingConstant();
+			context.add(n.name, resultType);
 		}
-		return new ExpTypeJudgment(new PestTypingConstant(), context, n);
+		else
+		{
+			resultType = arg.getTypeOf(n.name);
+		}
+		return new ExpTypeJudgment(resultType, context, n);
 	}
 
 	public ExpTypeJudgment visit(NegTopExp n, PestTypedContext arg) 
