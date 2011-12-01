@@ -29,7 +29,7 @@ public class Main {
 	private static Boolean isDebugging = true;
 	private static Boolean executeCVC3 = true;
 	private static OutputType outputType = OutputType.CONSOLE;
-	private static String inputFile = "tests/testString.pest";
+	private static String inputFile = "tests/testInference.pest";
 			
 	public static void main(String[] args) {
 		/*for (String inputFile : args)
