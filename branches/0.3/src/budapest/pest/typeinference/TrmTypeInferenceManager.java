@@ -25,7 +25,8 @@ public class TrmTypeInferenceManager extends TrmVisitor<TrmTypeJudgment, PestTyp
 			if(n.op != BinaryTrm.Operator.ADD)
 			{
 				return new TrmTypeJudgment(false,
-						n.op.toString() + " operation is not defined for type string");
+						n.op.toString() + " operation is not defined for type string" +
+								". Line " + n.line + " column " + n.column + ".");
 			}
 		}
 		
@@ -38,7 +39,8 @@ public class TrmTypeInferenceManager extends TrmVisitor<TrmTypeJudgment, PestTyp
 			return new TrmTypeJudgment(false,
 					leftAsString + " (" + leftJudgment.type.getTypeName() + ") " + 
 					" has a different type than " +
-					rightAsString + " (" + rightJudgment.type.getTypeName()  + ")");
+					rightAsString + " (" + rightJudgment.type.getTypeName()  + ")" + 
+					". Line " + n.line + " column " + n.column + ".");
 		}
 		
 		PestTypedContext newContext = new PestTypedContext(leftJudgment.context);
@@ -48,7 +50,8 @@ public class TrmTypeInferenceManager extends TrmVisitor<TrmTypeJudgment, PestTyp
 			return new TrmTypeJudgment(false,
 					"Typing error in expression: " + 
 				    n.accept(new TrmPrinter(), null) + ". " + 
-					unionResult.message);
+					unionResult.message + 
+					". Line " + n.line + " column " + n.column + ".");
 		}
 		newContext.replaceType(leftJudgment.type, unifier);
 		newContext.replaceType(rightJudgment.type, unifier);
@@ -76,7 +79,8 @@ public class TrmTypeInferenceManager extends TrmVisitor<TrmTypeJudgment, PestTyp
 		{
 			return new TrmTypeJudgment(false, 
 					"Cannot apply neg to the term " + n.accept(new TrmPrinter(), null) + 
-					" as it's not an Int");
+					" as it's not an Int" + 
+					". Line " + n.line + " column " + n.column + ".");
 		}
 		
 		context.replaceType(subTrmType, unifier);
@@ -97,7 +101,8 @@ public class TrmTypeInferenceManager extends TrmVisitor<TrmTypeJudgment, PestTyp
 			if(unifier == null)
 			{
 				return new TrmTypeJudgment(false, 
-						n.string + " must be a String in order to get its length");
+						n.string + " must be a String in order to get its length" + 
+								". Line " + n.line + " column " + n.column + ".");
 			}
 		}
 		
@@ -107,8 +112,17 @@ public class TrmTypeInferenceManager extends TrmVisitor<TrmTypeJudgment, PestTyp
 	
 	public TrmTypeJudgment visit(VarTrm n, PestTypedContext context)
 	{
-		PestType type = new PestTypingConstant();
-		context.add(n.name, type);
-		return new TrmTypeJudgment(type, context, n);
+		PestTypedContext newContext = new PestTypedContext(context);
+		PestType resultType; 
+		if(!context.isTyped(n.name))
+		{
+			resultType = new PestTypingConstant();
+			context.add(n.name, resultType);
+		}
+		else
+		{
+			resultType = context.getTypeOf(n.name);
+		}
+		return new TrmTypeJudgment(resultType, newContext, n);
 	}
 }
