@@ -1,0 +1,50 @@
+\documentclass[a4paper]{article}
+\usepackage[utf8x]{inputenc}
+\usepackage{amssymb}
+
+\begin{document}
+\title{AAP - Trabajo Práctico 3: Sistemas de tipos}
+\date{\today}
+
+\author{Bugni , Paulovsky , Perez (Grupo 2)}
+
+\maketitle
+
+\section{Ejercicio 1}
+
+Para implementar el soporte de \emph{strings} en Pest se realizaron las siguientes modificaciones al código existente:
+
+\begin{itemize}
+\item la extensión del léxico y la gramática de Pest para poder escribir literales de \emph{strings};
+\item la implementación de clases para realizar la inferencia del tipo de una expresión del lenguaje.
+\end{itemize}
+
+\subsection{Cambios en el lenguaje}
+
+Dado que en un principio el único tipo disponible era \emph{int}, fue necesario agregar (además del tipo \emph{string}) el tipo \emph{Top} para representar una subexpresión de tipo desconocido. 
+\\
+
+Fue necesario agregar al parser de Pest (tanto en su gramática como en sus clases auxiliares):
+
+\begin{itemize}
+\item términos literales que representan \emph{strings};
+\item el operador $|.|$ que devuelve la longitud de un \emph{string};
+\item la abstracción de muchas apariciones de expresiones Int por expresiones Top, como en el caso del operador $.+.$ (AdditiveIntExp cambiada por AdditiveTopExp) que en principio "suma" dos expresiones de tipo desconocido, y que en nuestra extensión pueden ser o bien ambas String o bien ambas Int.
+\end{itemize}
+
+Los cambios mencionados fueron realizados de manera análoga para Terms (permitiendo así usar strings en predicados de especificación de pest).
+
+\subsection{Implementación de la inferencia de tipos}
+
+La inferencia de tipos se realiza a través de las clases desarrolladas en el paquete \textbf{budapest.pest.typeinference}. Algunas de ellas son:
+
+\begin{itemize}
+\item \emph{PestTypeInferenceManager}: implementa un Visitor de código Pest que mantiene un contexto de tipos conocidos y responde si pudo o no tipar correctamente la expresión que le toca visitar.
+\item \emph{PestTypedContext}: representa a un contexto de tipado de expresiones.  Implementa la operación de unión de contextos que intenta unificar los tipos de los contextos a unir (lo cual puede resultar en un fallo).
+\item \emph{PestTypingConstant}: implementación de variables de tipo para su uso en la unificación de tipos mencionada.
+\item \emph{[Pred Trm Exp]TypeInferenceManager}: Visitors que intentan juzgar el tipo de una Pred / Trm / Exp basándose en el contexto y en las reglas de la semántica.
+\item \emph{[Pred Trm Exp]TypeJudgement}: clases que encapsulan el resultado de juzgar el tipo de una Pred / Trm / Exp.
+\item \emph{Pest[Int Bool String]Type}: clases para Terms, Preds y que encapsulan el resultado de juzgar el tipo de una Pred / Trm / Exp.
+\end{itemize}
+
+\end{document}
