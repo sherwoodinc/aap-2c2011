@@ -32,7 +32,7 @@ Fue necesario agregar al parser de Pest (tanto en su gramática como en sus clas
 \item la abstracción de muchas apariciones de expresiones Int por expresiones Top, como en el caso del operador $.+.$ (AdditiveIntExp cambiada por AdditiveTopExp) que en principio "suma" dos expresiones de tipo desconocido, y que en nuestra extensión pueden ser o bien ambas String o bien ambas Int.
 \end{itemize}
 
-Los cambios mencionados fueron realizados de manera análoga para Terms (permitiendo así usar strings en predicados de especificación de pest).
+Los cambios mencionados fueron realizados de manera análoga para Terms (permitiendo así usar \emph{strings} en predicados de especificación de pest).
 
 \subsection{Implementación de la inferencia de tipos}
 
@@ -40,11 +40,13 @@ La inferencia de tipos se realiza a través de las clases desarrolladas en el pa
 
 \begin{itemize}
 \item \emph{PestTypeInferenceManager}: implementa un Visitor de código Pest que mantiene un contexto de tipos conocidos y responde si pudo o no tipar correctamente la expresión que le toca visitar.
-\item \emph{PestTypedContext}: representa a un contexto de tipado de expresiones.  Implementa la operación de unión de contextos que intenta unificar los tipos de los contextos a unir (lo cual puede resultar en un fallo).
+\item \emph{PestTypedContext}: representa a un contexto de tipado de expresiones.  Implementa la operación de unión de contextos que intenta unificar los tipos de los contextos a unir (lo cual podría resultar en un fallo).
 \item \emph{PestTypingConstant}: implementación de variables de tipo para su uso en la unificación de tipos mencionada.
-\item \emph{[Pred Trm Exp]TypeInferenceManager}: Visitors que intentan juzgar el tipo de una Pred / Trm / Exp basándose en el contexto y en las reglas de la semántica.
+\item \emph{[Pred Trm Exp]TypeInferenceManager}: Visitors que intentan juzgar el tipo de una Pred / Trm / Exp basándose en el contexto y en las reglas de la semántica. En estas clases es donde se resuelve la inferencia del tipado de expresiones de la forma $e_1 + e_2$ y $|e|$. Para el caso de los Preds, además, se intenta inferir que la expresión sea de tipo \emph{Bool}. 
 \item \emph{[Pred Trm Exp]TypeJudgement}: clases que encapsulan el resultado de juzgar el tipo de una Pred / Trm / Exp.
-\item \emph{Pest[Int Bool String]Type}: clases para Terms, Preds y que encapsulan el resultado de juzgar el tipo de una Pred / Trm / Exp.
+\item \emph{Pest[Int Bool String]Type}: clases que representan los tipos disponibles para el uso en el contexto de tipos.
 \end{itemize}
+
+
 
 \end{document}
