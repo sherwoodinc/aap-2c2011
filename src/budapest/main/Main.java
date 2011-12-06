@@ -17,28 +17,30 @@ public class Main {
 
 	public static enum OutputType { CONSOLE, FILE };
 	
-	private static String inputFile = "tests/testInference.pest";
+	//private static String inputFile = "tests/testInference.pest";
 			
 	public static void main(String[] args) {
-		/*for (String inputFile : args)
-		{*/
+		for (String inputFile : args)
+		{
 			try
 			{
 				Program p = GetProgramFromFile(inputFile);
+				System.out.print("=== Procesando archivo " + inputFile + "\n");
 				System.out.print(p.toString());
 				
 				PestTypeInferenceManager inferenceManager = new PestTypeInferenceManager();
 				PestProgramTypeInferenceResult result = inferenceManager.infere(p);
 				System.out.println(result.toString());
+				System.out.print("\n\n");
 			
 			}
 			catch(PestToCVC3Exception e)
 			{
 				System.out.println(e.getMessage());
 			}
-		/*
+		
 		}
-		*/
+		
 	}
 	
 	private static Program GetProgramFromFile(String inputFile) throws PestToCVC3Exception {
