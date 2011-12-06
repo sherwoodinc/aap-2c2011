@@ -39,7 +39,7 @@ Los cambios mencionados fueron realizados de manera análoga para Terms (permiti
 La inferencia de tipos se realiza a través de las clases desarrolladas en el paquete \textbf{budapest.pest.typeinference}. Algunas de ellas son:
 
 \begin{itemize}
-\item \emph{PestTypeInferenceManager}: implementa un Visitor de código Pest que mantiene un contexto de tipos conocidos y responde si pudo o no tipar correctamente la expresión que le toca visitar.
+\item \emph{PestTypeInferenceManager}: implementa un Visitor de código Pest que mantiene un contexto de tipos conocidos y responde si pudo o no tipar correctamente un programa; delega en Visitors especializados la inferencia de expresiones / terms / predicados.
 \item \emph{PestTypedContext}: representa a un contexto de tipado de expresiones.  Implementa la operación de unión de contextos que intenta unificar los tipos de los contextos a unir (lo cual podría resultar en un fallo).
 \item \emph{PestTypingConstant}: implementación de variables de tipo para su uso en la unificación de tipos mencionada.
 \item \emph{[Pred Trm Exp]TypeInferenceManager}: Visitors que intentan juzgar el tipo de una Pred / Trm / Exp basándose en el contexto y en las reglas de la semántica. En estas clases es donde se resuelve la inferencia del tipado de expresiones de la forma $e_1 + e_2$ y $|e|$. Para el caso de los Preds, además, se intenta inferir que la expresión sea de tipo \emph{Bool}. 
